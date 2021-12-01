@@ -17,25 +17,47 @@ limitations under the License.
 package v1alpha1
 
 import (
+	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// KustomizationSetTemplateMeta represents the metadata  fields that may
+// be used for Kustomizations generated from the KustomizationSet (based on metav1.ObjectMeta)
+type KustomizationSetTemplateMeta struct {
+	Name        string            `json:"name,omitempty"`
+	Namespace   string            `json:"namespace,omitempty"`
+	Labels      map[string]string `json:"labels,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
+	Finalizers  []string          `json:"finalizers,omitempty"`
+}
+
+// KustomizationSetTemplate represents Kustomization specs as a split between
+// the ObjectMEta and KustomizationSpec.
+type KustomizationSetTemplate struct {
+	KustomizationSetTemplateMeta `json:"metadata"`
+	Spec                         kustomizev1.KustomizationSpec `json:"spec"`
+}
+
+// ListGenerator include items info.
+type ListGenerator struct {
+	Elements []apiextensionsv1.JSON   `json:"elements"`
+	Template KustomizationSetTemplate `json:"template,omitempty"`
+}
+
+// KustomizationSetGenerator include list item info
+type KustomizationSetGenerator struct {
+	List *ListGenerator `json:"list,omitempty"`
+}
 
 // KustomizationSetSpec defines the desired state of KustomizationSet
 type KustomizationSetSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of KustomizationSet. Edit kustomizationset_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Generators []KustomizationSetGenerator `json:"generators"`
+	Template   KustomizationSetTemplate    `json:"template"`
 }
 
 // KustomizationSetStatus defines the observed state of KustomizationSet
 type KustomizationSetStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true
