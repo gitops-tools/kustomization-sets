@@ -11,12 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GenerateKustomizations parses the KustomizationSet and creates a
-// Kustomization using the configured generators and templates.
-func GenerateKustomizations(r *sourcev1.KustomizationSet) ([]*kustomizev1.Kustomization, error) {
-	return nil, nil
-}
-
 const testKustomizationSetName = "test-kustomizations"
 
 func TestGenerateKustomizations(t *testing.T) {
@@ -49,7 +43,7 @@ func makeTestKustomizationSet() *sourcev1.KustomizationSet {
 				},
 			},
 			Template: sourcev1.KustomizationSetTemplate{
-				Metadata: sourcev1.KustomizationSetTemplateMeta{
+				KustomizationSetTemplateMeta: sourcev1.KustomizationSetTemplateMeta{
 					Name: `{{cluster}}-demo`,
 				},
 				Spec: kustomizev1.KustomizationSpec{
