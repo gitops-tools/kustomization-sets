@@ -35,8 +35,8 @@ type KustomizationSetTemplateMeta struct {
 // KustomizationSetTemplate represents Kustomization specs as a split between
 // the ObjectMEta and KustomizationSpec.
 type KustomizationSetTemplate struct {
-	KustomizationSetTemplateMeta `json:"metadata"`
-	Spec                         kustomizev1.KustomizationSpec `json:"spec"`
+	Metadata KustomizationSetTemplateMeta  `json:"metadata"`
+	Spec     kustomizev1.KustomizationSpec `json:"spec"`
 }
 
 // ListGenerator include items info.
