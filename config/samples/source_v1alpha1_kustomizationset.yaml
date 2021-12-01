@@ -1,0 +1,6 @@
+apiVersion: source.gitops.solutions/v1alpha1
+kind: KustomizationSet
+metadata:
+  name: kustomizationset-sample
+spec:
+  # Add fields here

@@ -1,0 +1,19 @@
+domain: gitops.solutions
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: kustomize-set-controller
+repo: github.com/gitops-tools/kustomize-set-controller
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: gitops.solutions
+  group: source
+  kind: KustomizationSet
+  path: github.com/gitops-tools/kustomize-set-controller/api/v1alpha1
+  version: v1alpha1
+version: "3"

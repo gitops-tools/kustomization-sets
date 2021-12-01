@@ -1,0 +1,24 @@
+# permissions for end users to edit kustomizationsets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kustomizationset-editor-role
+rules:
+- apiGroups:
+  - source.gitops.solutions
+  resources:
+  - kustomizationsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - source.gitops.solutions
+  resources:
+  - kustomizationsets/status
+  verbs:
+  - get
