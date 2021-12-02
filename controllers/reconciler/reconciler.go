@@ -1,6 +1,8 @@
 package reconciler
 
 import (
+	"fmt"
+
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/controllers/reconciler/generators"
@@ -15,33 +17,23 @@ var defaultGenerators = map[string]generators.Generator{
 // Kustomization using the configured generators and templates.
 func GenerateKustomizations(r *sourcev1.KustomizationSet) ([]kustomizev1.Kustomization, error) {
 	var res []kustomizev1.Kustomization
-	var firstError error
-
 	for _, g := range r.Spec.Generators {
 		t, err := generators.Transform(g, defaultGenerators, r.Spec.Template, r)
 		if err != nil {
-			if firstError == nil {
-				firstError = err
-			}
-			continue
+			return nil, fmt.Errorf("failed to transform template for set %s: %w", r.GetName(), err)
 		}
-
 		for _, a := range t {
-			tmplApplication := makeKustomization(a.Template)
-
+			tmplKustomization := makeKustomization(a.Template)
 			for _, p := range a.Params {
-				app, err := renderTemplateParams(tmplApplication, p)
+				app, err := renderTemplateParams(tmplKustomization, p)
 				if err != nil {
-					if firstError == nil {
-						firstError = err
-					}
-					continue
+					return nil, fmt.Errorf("failed to render template params for set %s: %w", r.GetName(), err)
 				}
 				res = append(res, *app)
 			}
 		}
 	}
-	return res, firstError
+	return res, nil
 }
 
 func makeKustomization(template sourcev1.KustomizationSetTemplate) *kustomizev1.Kustomization {

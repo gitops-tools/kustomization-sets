@@ -7,8 +7,11 @@ import (
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/fluxcd/pkg/apis/meta"
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	"github.com/google/go-cmp/cmp"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const testKustomizationSetName = "test-kustomizations"
@@ -17,11 +20,69 @@ func TestGenerateKustomizations(t *testing.T) {
 	kset := makeTestKustomizationSet()
 
 	kusts, err := GenerateKustomizations(kset)
-	if err != nil {
-		t.Fatal(err)
+	assert.NoError(t, err)
+
+	want := []kustomizev1.Kustomization{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "engineering-dev-demo",
+			},
+			Spec: kustomizev1.KustomizationSpec{
+				Path:     "./clusters/engineering-dev/",
+				Interval: metav1.Duration{5 * time.Minute},
+				Prune:    true,
+				SourceRef: kustomizev1.CrossNamespaceSourceReference{
+					Kind: "GitRepository",
+					Name: "demo-repo",
+				},
+				KubeConfig: &kustomizev1.KubeConfig{
+					SecretRef: meta.LocalObjectReference{
+						Name: "engineering-dev",
+					},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "engineering-prod-demo",
+			},
+			Spec: kustomizev1.KustomizationSpec{
+				Path:     "./clusters/engineering-prod/",
+				Interval: metav1.Duration{5 * time.Minute},
+				Prune:    true,
+				SourceRef: kustomizev1.CrossNamespaceSourceReference{
+					Kind: "GitRepository",
+					Name: "demo-repo",
+				},
+				KubeConfig: &kustomizev1.KubeConfig{
+					SecretRef: meta.LocalObjectReference{
+						Name: "engineering-prod",
+					},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "engineering-preprod-demo",
+			},
+			Spec: kustomizev1.KustomizationSpec{
+				Path:     "./clusters/engineering-preprod/",
+				Interval: metav1.Duration{5 * time.Minute},
+				Prune:    true,
+				SourceRef: kustomizev1.CrossNamespaceSourceReference{
+					Kind: "GitRepository",
+					Name: "demo-repo",
+				},
+				KubeConfig: &kustomizev1.KubeConfig{
+					SecretRef: meta.LocalObjectReference{
+						Name: "engineering-preprod",
+					},
+				},
+			},
+		},
 	}
-	if l := len(kusts); l != 3 {
-		t.Fatalf("got %d, want 3", l)
+	if diff := cmp.Diff(want, kusts); diff != "" {
+		t.Fatalf("failed to generate kustomizations:\n%s", diff)
 	}
 }
 
