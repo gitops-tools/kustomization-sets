@@ -1,0 +1,25 @@
+apiVersion: source.gitops.solutions/v1alpha1
+kind: KustomizationSet
+metadata:
+  name: kustomizationset-sample
+spec:
+  generators:
+  - list:
+      elements:
+      - cluster: engineering-dev
+      - cluster: engineering-prod
+      - cluster: engineering-preprod
+  template:
+    metadata:
+      name: '{{cluster}}-demo'
+      namespace: default
+    spec:
+      interval: 5m
+      path: "./clusters/{{cluster}}/"
+      prune: true
+      sourceRef:
+        kind: GitRepository
+        name: demo-repo
+      kubeConfig:
+        secretRef:
+          name: "{{cluster}}"

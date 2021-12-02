@@ -90,7 +90,7 @@ func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
 					Namespace: "default",
 				},
 				Spec: kustomizev1.KustomizationSpec{
-					Interval: metav1.Duration{5 * time.Minute},
+					Interval: metav1.Duration{Duration: 5 * time.Minute},
 					Path:     "./clusters/{{cluster}}/",
 					Prune:    true,
 					SourceRef: kustomizev1.CrossNamespaceSourceReference{

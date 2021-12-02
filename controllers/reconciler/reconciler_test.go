@@ -66,7 +66,7 @@ func makeTestKustomizationSet(elements []apiextensionsv1.JSON) *sourcev1.Kustomi
 					Name: `{{cluster}}-demo`,
 				},
 				Spec: kustomizev1.KustomizationSpec{
-					Interval: metav1.Duration{5 * time.Minute},
+					Interval: metav1.Duration{Duration: 5 * time.Minute},
 					Path:     "./clusters/{{cluster}}/",
 					Prune:    true,
 					SourceRef: kustomizev1.CrossNamespaceSourceReference{
@@ -91,7 +91,7 @@ func makeTestKustomization(name string) kustomizev1.Kustomization {
 		},
 		Spec: kustomizev1.KustomizationSpec{
 			Path:     "./clusters/" + name + "/",
-			Interval: metav1.Duration{5 * time.Minute},
+			Interval: metav1.Duration{Duration: 5 * time.Minute},
 			Prune:    true,
 			SourceRef: kustomizev1.CrossNamespaceSourceReference{
 				Kind: "GitRepository",
