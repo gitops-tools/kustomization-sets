@@ -19,7 +19,6 @@ func Transform(generator sourcev1.KustomizationSetGenerator, allGenerators map[s
 
 	generators := findRelevantGenerators(&generator, allGenerators)
 	for _, g := range generators {
-		// we call mergeGeneratorTemplate first because GenerateParams might be more costly so we want to fail fast if there is an error
 		mergedTemplate, err := mergeGeneratorTemplate(g, &generator, baseTemplate)
 		if err != nil {
 			if firstError == nil {

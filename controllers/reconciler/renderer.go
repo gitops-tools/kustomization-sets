@@ -11,12 +11,7 @@ import (
 	"github.com/valyala/fasttemplate"
 )
 
-var defaultRenderer = fastTemplateRenderer{}
-
-type fastTemplateRenderer struct {
-}
-
-func (r fastTemplateRenderer) RenderTemplateParams(tmpl *kustomizev1.Kustomization, params map[string]string) (*kustomizev1.Kustomization, error) {
+func renderTemplateParams(tmpl *kustomizev1.Kustomization, params map[string]string) (*kustomizev1.Kustomization, error) {
 	if tmpl == nil {
 		return nil, fmt.Errorf("application template is empty ")
 	}
@@ -31,7 +26,7 @@ func (r fastTemplateRenderer) RenderTemplateParams(tmpl *kustomizev1.Kustomizati
 	}
 
 	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
-	replacedTmplStr, err := r.replace(fstTmpl, params, true)
+	replacedTmplStr, err := replace(fstTmpl, params, true)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +42,7 @@ func (r fastTemplateRenderer) RenderTemplateParams(tmpl *kustomizev1.Kustomizati
 // Replace executes basic string substitution of a template with replacement values.
 // 'allowUnresolved' indicates whether or not it is acceptable to have unresolved variables
 // remaining in the substituted template.
-func (r fastTemplateRenderer) replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
+func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 

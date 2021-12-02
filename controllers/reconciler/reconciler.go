@@ -30,7 +30,7 @@ func GenerateKustomizations(r *sourcev1.KustomizationSet) ([]kustomizev1.Kustomi
 			tmplApplication := makeKustomization(a.Template)
 
 			for _, p := range a.Params {
-				app, err := defaultRenderer.RenderTemplateParams(tmplApplication, p)
+				app, err := renderTemplateParams(tmplApplication, p)
 				if err != nil {
 					if firstError == nil {
 						firstError = err
