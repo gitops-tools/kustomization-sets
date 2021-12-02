@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -39,15 +40,30 @@ type KustomizationSetTemplate struct {
 	Spec                         kustomizev1.KustomizationSpec `json:"spec"`
 }
 
-// ListGenerator include items info.
+// ListGenerator generates from a hard-coded list.
 type ListGenerator struct {
 	Elements []apiextensionsv1.JSON    `json:"elements"`
 	Template *KustomizationSetTemplate `json:"template,omitempty"`
 }
 
+// GitDirectoryGeneratorItem represents a path to be scanned in a repository.
+type GitDirectoryGeneratorItem struct {
+	Path    string `json:"path"`
+	Exclude bool   `json:"exclude,omitempty"`
+}
+
+// GitRepositoryGenerator generates from a Flux GitRepository.
+type GitRepositoryGenerator struct {
+	RepositoryRef       corev1.LocalObjectReference `json:"repositoryRef"`
+	Directories         []GitDirectoryGeneratorItem `json:"directories,omitempty"`
+	RequeueAfterSeconds *int64                      `json:"requeueAfterSeconds,omitempty"`
+	Template            *KustomizationSetTemplate   `json:"template,omitempty"`
+}
+
 // KustomizationSetGenerator include list item info
 type KustomizationSetGenerator struct {
-	List *ListGenerator `json:"list,omitempty"`
+	List          *ListGenerator          `json:"list,omitempty"`
+	GitRepository *GitRepositoryGenerator `json:"gitRepository,omitempty"`
 }
 
 // KustomizationSetSpec defines the desired state of KustomizationSet

@@ -16,6 +16,8 @@ import (
 
 const testKustomizationSetName = "test-kustomizations"
 
+// TODO: Test Generator with Template.
+
 func TestGenerateKustomizations(t *testing.T) {
 	listGeneratorTests := []struct {
 		name     string
