@@ -17,22 +17,38 @@ import (
 const testKustomizationSetName = "test-kustomizations"
 
 func TestGenerateKustomizations(t *testing.T) {
-	kset := makeTestKustomizationSet()
+	listGeneratorTests := []struct {
+		name     string
+		elements []apiextensionsv1.JSON
+		want     []kustomizev1.Kustomization
+	}{{
+		name: "multiple elements element",
+		elements: []apiextensionsv1.JSON{
+			{Raw: []byte(`{"cluster": "engineering-dev"}`)},
+			{Raw: []byte(`{"cluster": "engineering-prod"}`)},
+			{Raw: []byte(`{"cluster": "engineering-preprod"}`)},
+		},
+		want: []kustomizev1.Kustomization{
+			makeTestKustomization("engineering-dev"),
+			makeTestKustomization("engineering-prod"),
+			makeTestKustomization("engineering-preprod"),
+		},
+	}}
 
-	kusts, err := GenerateKustomizations(kset)
-	assert.NoError(t, err)
+	for _, tt := range listGeneratorTests {
+		t.Run(tt.name, func(t *testing.T) {
+			kset := makeTestKustomizationSet(tt.elements)
+			kusts, err := GenerateKustomizations(kset)
+			assert.NoError(t, err)
 
-	want := []kustomizev1.Kustomization{
-		makeTestKustomization("engineering-dev"),
-		makeTestKustomization("engineering-prod"),
-		makeTestKustomization("engineering-preprod"),
-	}
-	if diff := cmp.Diff(want, kusts); diff != "" {
-		t.Fatalf("failed to generate kustomizations:\n%s", diff)
+			if diff := cmp.Diff(tt.want, kusts); diff != "" {
+				t.Fatalf("failed to generate kustomizations:\n%s", diff)
+			}
+		})
 	}
 }
 
-func makeTestKustomizationSet() *sourcev1.KustomizationSet {
+func makeTestKustomizationSet(elements []apiextensionsv1.JSON) *sourcev1.KustomizationSet {
 	return &sourcev1.KustomizationSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testKustomizationSetName,
@@ -41,11 +57,7 @@ func makeTestKustomizationSet() *sourcev1.KustomizationSet {
 			Generators: []sourcev1.KustomizationSetGenerator{
 				{
 					List: &sourcev1.ListGenerator{
-						Elements: []apiextensionsv1.JSON{
-							{Raw: []byte(`{"cluster": "engineering-dev"}`)},
-							{Raw: []byte(`{"cluster": "engineering-prod"}`)},
-							{Raw: []byte(`{"cluster": "engineering-preprod"}`)},
-						},
+						Elements: elements,
 					},
 				},
 			},
