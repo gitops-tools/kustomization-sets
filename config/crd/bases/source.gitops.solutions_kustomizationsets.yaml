@@ -49,7 +49,7 @@ spec:
                           type: array
                         template:
                           description: KustomizationSetTemplate represents Kustomization
-                            specs as a split between the ObjectMEta and KustomizationSpec.
+                            specs as a split between the ObjectMeta and KustomizationSpec.
                           properties:
                             metadata:
                               description: KustomizationSetTemplateMeta represents
@@ -506,7 +506,7 @@ spec:
                 type: array
               template:
                 description: KustomizationSetTemplate represents Kustomization specs
-                  as a split between the ObjectMEta and KustomizationSpec.
+                  as a split between the ObjectMeta and KustomizationSpec.
                 properties:
                   metadata:
                     description: KustomizationSetTemplateMeta represents the metadata  fields

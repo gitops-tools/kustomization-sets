@@ -33,7 +33,7 @@ type KustomizationSetTemplateMeta struct {
 }
 
 // KustomizationSetTemplate represents Kustomization specs as a split between
-// the ObjectMEta and KustomizationSpec.
+// the ObjectMeta and KustomizationSpec.
 type KustomizationSetTemplate struct {
 	KustomizationSetTemplateMeta `json:"metadata"`
 	Spec                         kustomizev1.KustomizationSpec `json:"spec"`
@@ -41,8 +41,8 @@ type KustomizationSetTemplate struct {
 
 // ListGenerator include items info.
 type ListGenerator struct {
-	Elements []apiextensionsv1.JSON   `json:"elements"`
-	Template KustomizationSetTemplate `json:"template,omitempty"`
+	Elements []apiextensionsv1.JSON    `json:"elements"`
+	Template *KustomizationSetTemplate `json:"template,omitempty"`
 }
 
 // KustomizationSetGenerator include list item info
