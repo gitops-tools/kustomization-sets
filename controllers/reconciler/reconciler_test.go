@@ -23,63 +23,9 @@ func TestGenerateKustomizations(t *testing.T) {
 	assert.NoError(t, err)
 
 	want := []kustomizev1.Kustomization{
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "engineering-dev-demo",
-			},
-			Spec: kustomizev1.KustomizationSpec{
-				Path:     "./clusters/engineering-dev/",
-				Interval: metav1.Duration{5 * time.Minute},
-				Prune:    true,
-				SourceRef: kustomizev1.CrossNamespaceSourceReference{
-					Kind: "GitRepository",
-					Name: "demo-repo",
-				},
-				KubeConfig: &kustomizev1.KubeConfig{
-					SecretRef: meta.LocalObjectReference{
-						Name: "engineering-dev",
-					},
-				},
-			},
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "engineering-prod-demo",
-			},
-			Spec: kustomizev1.KustomizationSpec{
-				Path:     "./clusters/engineering-prod/",
-				Interval: metav1.Duration{5 * time.Minute},
-				Prune:    true,
-				SourceRef: kustomizev1.CrossNamespaceSourceReference{
-					Kind: "GitRepository",
-					Name: "demo-repo",
-				},
-				KubeConfig: &kustomizev1.KubeConfig{
-					SecretRef: meta.LocalObjectReference{
-						Name: "engineering-prod",
-					},
-				},
-			},
-		},
-		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "engineering-preprod-demo",
-			},
-			Spec: kustomizev1.KustomizationSpec{
-				Path:     "./clusters/engineering-preprod/",
-				Interval: metav1.Duration{5 * time.Minute},
-				Prune:    true,
-				SourceRef: kustomizev1.CrossNamespaceSourceReference{
-					Kind: "GitRepository",
-					Name: "demo-repo",
-				},
-				KubeConfig: &kustomizev1.KubeConfig{
-					SecretRef: meta.LocalObjectReference{
-						Name: "engineering-preprod",
-					},
-				},
-			},
-		},
+		makeTestKustomization("engineering-dev"),
+		makeTestKustomization("engineering-prod"),
+		makeTestKustomization("engineering-preprod"),
 	}
 	if diff := cmp.Diff(want, kusts); diff != "" {
 		t.Fatalf("failed to generate kustomizations:\n%s", diff)
@@ -120,6 +66,28 @@ func makeTestKustomizationSet() *sourcev1.KustomizationSet {
 							Name: "{{cluster}}",
 						},
 					},
+				},
+			},
+		},
+	}
+}
+
+func makeTestKustomization(name string) kustomizev1.Kustomization {
+	return kustomizev1.Kustomization{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name + "-demo",
+		},
+		Spec: kustomizev1.KustomizationSpec{
+			Path:     "./clusters/" + name + "/",
+			Interval: metav1.Duration{5 * time.Minute},
+			Prune:    true,
+			SourceRef: kustomizev1.CrossNamespaceSourceReference{
+				Kind: "GitRepository",
+				Name: "demo-repo",
+			},
+			KubeConfig: &kustomizev1.KubeConfig{
+				SecretRef: meta.LocalObjectReference{
+					Name: name,
 				},
 			},
 		},
