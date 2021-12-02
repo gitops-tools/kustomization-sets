@@ -199,3 +199,9 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+.PHONY: cluster-crd
+kustomization-crds:
+	@mkdir -p controllers/testdata/crds
+	@curl -L https://github.com/fluxcd/kustomize-controller/releases/download/v0.18.1/kustomize-controller.crds.yaml -o controllers/testdata/crds/kustomization-crds.yaml
+

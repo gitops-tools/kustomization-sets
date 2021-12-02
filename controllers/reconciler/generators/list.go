@@ -69,5 +69,5 @@ func (g *ListGenerator) GetRequeueAfter(kustomizationSetGenerator *sourcev1.Kust
 
 // GetTemplate is an implementation of the Generator interface.
 func (g *ListGenerator) GetTemplate(kustomizationSetGenerator *sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate {
-	return &kustomizationSetGenerator.List.Template
+	return kustomizationSetGenerator.List.Template
 }

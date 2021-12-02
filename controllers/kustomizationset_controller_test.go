@@ -36,7 +36,9 @@ var (
 func TestMain(m *testing.M) {
 	utilruntime.Must(kustomizev1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(sourcev1alpha1.AddToScheme(scheme.Scheme))
-	testEnv = testenv.New(testenv.WithCRDPath(filepath.Join("..", "config", "crd", "bases")))
+	testEnv = testenv.New(
+		testenv.WithCRDPath(filepath.Join("..", "config", "crd", "bases")),
+		testenv.WithCRDPath("testdata/crds"))
 
 	if err := (&KustomizationSetReconciler{
 		Client: testEnv,
@@ -84,7 +86,8 @@ func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
 			},
 			Template: sourcev1alpha1.KustomizationSetTemplate{
 				KustomizationSetTemplateMeta: sourcev1alpha1.KustomizationSetTemplateMeta{
-					Name: `{{cluster}}-demo`,
+					Name:      `{{cluster}}-demo`,
+					Namespace: "default",
 				},
 				Spec: kustomizev1.KustomizationSpec{
 					Interval: metav1.Duration{5 * time.Minute},

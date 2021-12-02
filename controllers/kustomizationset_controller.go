@@ -18,13 +18,16 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomize-set-controller/controllers/reconciler"
 )
 
 // KustomizationSetReconciler reconciles a KustomizationSet object
@@ -36,11 +39,32 @@ type KustomizationSetReconciler struct {
 //+kubebuilder:rbac:groups=source.gitops.solutions,resources=kustomizationsets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=source.gitops.solutions,resources=kustomizationsets/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=source.gitops.solutions,resources=kustomizationsets/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kustomize.toolkit.fluxcd.io,resources=kustomizations,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *KustomizationSetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
+	var kustomizationSet sourcev1alpha1.KustomizationSet
+	if err := r.Client.Get(ctx, req.NamespacedName, &kustomizationSet); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	logger.Info("kustomization set loaded", "name", kustomizationSet.GetName())
+
+	kustomizations, err := reconciler.GenerateKustomizations(&kustomizationSet)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	for _, kustomization := range kustomizations {
+		if err := controllerutil.SetOwnerReference(&kustomizationSet, &kustomization, r.Client.Scheme()); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to set owner for Kustomization: %w", err)
+		}
+		if err := r.Client.Create(ctx, &kustomization); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to create Kustomization: %w", err)
+		}
+	}
 
 	return ctrl.Result{}, nil
 }

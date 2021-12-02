@@ -59,10 +59,13 @@ func findRelevantGenerators(requestedGenerator *sourcev1.KustomizationSetGenerat
 	return res
 }
 
-func mergeGeneratorTemplate(g Generator, requestedGenerator *sourcev1.KustomizationSetGenerator, applicationSetTemplate sourcev1.KustomizationSetTemplate) (sourcev1.KustomizationSetTemplate, error) {
+func mergeGeneratorTemplate(g Generator, requestedGenerator *sourcev1.KustomizationSetGenerator, kustomizationSetTemplate sourcev1.KustomizationSetTemplate) (sourcev1.KustomizationSetTemplate, error) {
 	// Make a copy of the value from `GetTemplate()` before merge, rather than copying directly into
 	// the provided parameter (which will touch the original resource object returned by client-go)
 	dest := g.GetTemplate(requestedGenerator).DeepCopy()
-	err := mergo.Merge(dest, applicationSetTemplate)
+	if dest == nil {
+		return kustomizationSetTemplate, nil
+	}
+	err := mergo.Merge(dest, kustomizationSetTemplate)
 	return *dest, err
 }
