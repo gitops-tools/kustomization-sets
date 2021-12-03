@@ -39,7 +39,7 @@ func TestGenerateKustomizations(t *testing.T) {
 
 	for _, tt := range listGeneratorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			kset := makeTestKustomizationSet(tt.elements)
+			kset := makeTestKustomizationSet(withListElements(tt.elements))
 			kusts, err := GenerateKustomizations(kset)
 			assert.NoError(t, err)
 
@@ -50,19 +50,26 @@ func TestGenerateKustomizations(t *testing.T) {
 	}
 }
 
-func makeTestKustomizationSet(elements []apiextensionsv1.JSON) *sourcev1.KustomizationSet {
-	return &sourcev1.KustomizationSet{
+func withListElements(el []apiextensionsv1.JSON) func(*sourcev1.KustomizationSet) {
+	return func(ks *sourcev1.KustomizationSet) {
+		if ks.Spec.Generators == nil {
+			ks.Spec.Generators = []sourcev1.KustomizationSetGenerator{}
+		}
+		ks.Spec.Generators = append(ks.Spec.Generators,
+			sourcev1.KustomizationSetGenerator{
+				List: &sourcev1.ListGenerator{
+					Elements: el,
+				},
+			})
+	}
+}
+
+func makeTestKustomizationSet(opts ...func(*sourcev1.KustomizationSet)) *sourcev1.KustomizationSet {
+	ks := &sourcev1.KustomizationSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testKustomizationSetName,
 		},
 		Spec: sourcev1.KustomizationSetSpec{
-			Generators: []sourcev1.KustomizationSetGenerator{
-				{
-					List: &sourcev1.ListGenerator{
-						Elements: elements,
-					},
-				},
-			},
 			Template: sourcev1.KustomizationSetTemplate{
 				KustomizationSetTemplateMeta: sourcev1.KustomizationSetTemplateMeta{
 					Name: `{{cluster}}-demo`,
@@ -84,6 +91,10 @@ func makeTestKustomizationSet(elements []apiextensionsv1.JSON) *sourcev1.Kustomi
 			},
 		},
 	}
+	for _, o := range opts {
+		o(ks)
+	}
+	return ks
 }
 
 func makeTestKustomization(name string) kustomizev1.Kustomization {
