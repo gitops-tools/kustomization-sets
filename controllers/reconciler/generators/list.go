@@ -18,17 +18,17 @@ func NewListGenerator() Generator {
 	return &ListGenerator{}
 }
 
-func (g *ListGenerator) GenerateParams(kustomizationSetGenerator *sourcev1.KustomizationSetGenerator, _ *sourcev1.KustomizationSet) ([]map[string]string, error) {
-	if kustomizationSetGenerator == nil {
+func (g *ListGenerator) GenerateParams(sg *sourcev1.KustomizationSetGenerator, _ *sourcev1.KustomizationSet) ([]map[string]string, error) {
+	if sg == nil {
 		return nil, EmptyKustomizationSetGeneratorError
 	}
 
-	if kustomizationSetGenerator.List == nil {
+	if sg.List == nil {
 		return nil, nil
 	}
 
-	res := make([]map[string]string, len(kustomizationSetGenerator.List.Elements))
-	for i, el := range kustomizationSetGenerator.List.Elements {
+	res := make([]map[string]string, len(sg.List.Elements))
+	for i, el := range sg.List.Elements {
 		params := map[string]string{}
 		var element map[string]interface{}
 		err := json.Unmarshal(el.Raw, &element)
@@ -63,11 +63,11 @@ func (g *ListGenerator) GenerateParams(kustomizationSetGenerator *sourcev1.Kusto
 }
 
 // GetRequeueAfter is an implementation of the Generator interface.
-func (g *ListGenerator) GetRequeueAfter(kustomizationSetGenerator *sourcev1.KustomizationSetGenerator) time.Duration {
+func (g *ListGenerator) GetRequeueAfter(sg *sourcev1.KustomizationSetGenerator) time.Duration {
 	return NoRequeueAfter
 }
 
 // GetTemplate is an implementation of the Generator interface.
-func (g *ListGenerator) GetTemplate(kustomizationSetGenerator *sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate {
-	return kustomizationSetGenerator.List.Template
+func (g *ListGenerator) GetTemplate(sg *sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate {
+	return sg.List.Template
 }

@@ -22,24 +22,43 @@ func TestGenerateKustomizations(t *testing.T) {
 	listGeneratorTests := []struct {
 		name     string
 		elements []apiextensionsv1.JSON
+		tp       *sourcev1.KustomizationSetTemplate
 		want     []kustomizev1.Kustomization
-	}{{
-		name: "multiple elements element",
-		elements: []apiextensionsv1.JSON{
-			{Raw: []byte(`{"cluster": "engineering-dev"}`)},
-			{Raw: []byte(`{"cluster": "engineering-prod"}`)},
-			{Raw: []byte(`{"cluster": "engineering-preprod"}`)},
+	}{
+		{
+			name: "multiple elements",
+			elements: []apiextensionsv1.JSON{
+				{Raw: []byte(`{"cluster": "engineering-dev"}`)},
+				{Raw: []byte(`{"cluster": "engineering-prod"}`)},
+				{Raw: []byte(`{"cluster": "engineering-preprod"}`)},
+			},
+			want: []kustomizev1.Kustomization{
+				makeTestKustomization("engineering-dev"),
+				makeTestKustomization("engineering-prod"),
+				makeTestKustomization("engineering-preprod"),
+			},
 		},
-		want: []kustomizev1.Kustomization{
-			makeTestKustomization("engineering-dev"),
-			makeTestKustomization("engineering-prod"),
-			makeTestKustomization("engineering-preprod"),
+		{
+			name: "list generator with template",
+			elements: []apiextensionsv1.JSON{
+				{Raw: []byte(`{"cluster": "engineering-dev"}`)},
+			},
+			tp: &sourcev1.KustomizationSetTemplate{
+				KustomizationSetTemplateMeta: sourcev1.KustomizationSetTemplateMeta{
+					Labels: map[string]string{
+						"cluster.app/name": "{{ cluster }}",
+					},
+				},
+			},
+			want: []kustomizev1.Kustomization{
+				makeTestKustomization("engineering-dev", withLabels(map[string]string{"cluster.app/name": "engineering-dev"})),
+			},
 		},
-	}}
+	}
 
 	for _, tt := range listGeneratorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			kset := makeTestKustomizationSet(withListElements(tt.elements))
+			kset := makeTestKustomizationSet(withListElements(tt.elements, tt.tp))
 			kusts, err := GenerateKustomizations(kset)
 			assert.NoError(t, err)
 
@@ -50,14 +69,16 @@ func TestGenerateKustomizations(t *testing.T) {
 	}
 }
 
-func withListElements(el []apiextensionsv1.JSON) func(*sourcev1.KustomizationSet) {
+func withListElements(el []apiextensionsv1.JSON, tp *sourcev1.KustomizationSetTemplate) func(*sourcev1.KustomizationSet) {
 	return func(ks *sourcev1.KustomizationSet) {
 		if ks.Spec.Generators == nil {
 			ks.Spec.Generators = []sourcev1.KustomizationSetGenerator{}
 		}
 		ks.Spec.Generators = append(ks.Spec.Generators,
 			sourcev1.KustomizationSetGenerator{
+
 				List: &sourcev1.ListGenerator{
+					Template: tp,
 					Elements: el,
 				},
 			})
@@ -97,8 +118,14 @@ func makeTestKustomizationSet(opts ...func(*sourcev1.KustomizationSet)) *sourcev
 	return ks
 }
 
-func makeTestKustomization(name string) kustomizev1.Kustomization {
-	return kustomizev1.Kustomization{
+func withLabels(l map[string]string) func(*kustomizev1.Kustomization) {
+	return func(k *kustomizev1.Kustomization) {
+		k.ObjectMeta.Labels = l
+	}
+}
+
+func makeTestKustomization(name string, opts ...func(*kustomizev1.Kustomization)) kustomizev1.Kustomization {
+	k := kustomizev1.Kustomization{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name + "-demo",
 		},
@@ -117,4 +144,8 @@ func makeTestKustomization(name string) kustomizev1.Kustomization {
 			},
 		},
 	}
+	for _, o := range opts {
+		o(&k)
+	}
+	return k
 }

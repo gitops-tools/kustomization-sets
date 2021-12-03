@@ -45,9 +45,7 @@ func renderTemplateParams(tmpl *kustomizev1.Kustomization, params map[string]str
 func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-
 		trimmedTag := strings.TrimSpace(tag)
-
 		replacement, ok := replaceMap[trimmedTag]
 		if len(trimmedTag) == 0 || !ok {
 			if allowUnresolved {

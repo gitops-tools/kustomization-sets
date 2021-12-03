@@ -43,9 +43,9 @@ func Transform(generator sourcev1.KustomizationSetGenerator, allGenerators map[s
 	return res, firstError
 }
 
-func findRelevantGenerators(requestedGenerator *sourcev1.KustomizationSetGenerator, generators map[string]Generator) []Generator {
+func findRelevantGenerators(setGenerator *sourcev1.KustomizationSetGenerator, generators map[string]Generator) []Generator {
 	var res []Generator
-	v := reflect.Indirect(reflect.ValueOf(requestedGenerator))
+	v := reflect.Indirect(reflect.ValueOf(setGenerator))
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if !field.CanInterface() {
@@ -59,10 +59,10 @@ func findRelevantGenerators(requestedGenerator *sourcev1.KustomizationSetGenerat
 	return res
 }
 
-func mergeGeneratorTemplate(g Generator, requestedGenerator *sourcev1.KustomizationSetGenerator, kustomizationSetTemplate sourcev1.KustomizationSetTemplate) (sourcev1.KustomizationSetTemplate, error) {
+func mergeGeneratorTemplate(g Generator, setGenerator *sourcev1.KustomizationSetGenerator, kustomizationSetTemplate sourcev1.KustomizationSetTemplate) (sourcev1.KustomizationSetTemplate, error) {
 	// Make a copy of the value from `GetTemplate()` before merge, rather than copying directly into
 	// the provided parameter (which will touch the original resource object returned by client-go)
-	dest := g.GetTemplate(requestedGenerator).DeepCopy()
+	dest := g.GetTemplate(setGenerator).DeepCopy()
 	if dest == nil {
 		return kustomizationSetTemplate, nil
 	}

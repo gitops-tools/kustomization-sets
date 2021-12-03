@@ -22,4 +22,4 @@ spec:
         name: demo-repo
       kubeConfig:
         secretRef:
-          name: "{{cluster}}"
+          name: "{{cluster}}-kubeconfig"

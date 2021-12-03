@@ -1,0 +1,23 @@
+apiVersion: source.gitops.solutions/v1alpha1
+kind: KustomizationSet
+metadata:
+  name: go-demo-set
+  namespace: default
+spec:
+  generators:
+  - list:
+      elements:
+      - env: dev
+      - env: production
+      - env: staging
+  template:
+    metadata:
+      name: '{{env}}-demo'
+      namespace: default
+    spec:
+      interval: 5m
+      path: "./examples/kustomize/environments/{{ env }}"
+      prune: true
+      sourceRef:
+        kind: GitRepository
+        name: go-demo-repo
