@@ -1,9 +1,10 @@
-package generators
+package reconciler
 
 import (
 	"reflect"
 
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomize-set-controller/controllers/reconciler/generators"
 	"github.com/imdario/mergo"
 )
 
@@ -12,27 +13,18 @@ type transformResult struct {
 	Template sourcev1.KustomizationSetTemplate
 }
 
-// Transform a spec generator to list of params and a template
-func Transform(generator sourcev1.KustomizationSetGenerator, allGenerators map[string]Generator, baseTemplate sourcev1.KustomizationSetTemplate, kustomizeSet *sourcev1.KustomizationSet) ([]transformResult, error) {
+func transform(generator sourcev1.KustomizationSetGenerator, allGenerators map[string]generators.Generator, baseTemplate sourcev1.KustomizationSetTemplate, kustomizeSet *sourcev1.KustomizationSet) ([]transformResult, error) {
 	res := []transformResult{}
-	var firstError error
-
 	generators := findRelevantGenerators(&generator, allGenerators)
 	for _, g := range generators {
 		mergedTemplate, err := mergeGeneratorTemplate(g, &generator, baseTemplate)
 		if err != nil {
-			if firstError == nil {
-				firstError = err
-			}
-			continue
+			return nil, err
 		}
 
 		params, err := g.GenerateParams(&generator, kustomizeSet)
 		if err != nil {
-			if firstError == nil {
-				firstError = err
-			}
-			continue
+			return nil, err
 		}
 
 		res = append(res, transformResult{
@@ -40,11 +32,11 @@ func Transform(generator sourcev1.KustomizationSetGenerator, allGenerators map[s
 			Template: mergedTemplate,
 		})
 	}
-	return res, firstError
+	return res, nil
 }
 
-func findRelevantGenerators(setGenerator *sourcev1.KustomizationSetGenerator, generators map[string]Generator) []Generator {
-	var res []Generator
+func findRelevantGenerators(setGenerator *sourcev1.KustomizationSetGenerator, registered map[string]generators.Generator) []generators.Generator {
+	var res []generators.Generator
 	v := reflect.Indirect(reflect.ValueOf(setGenerator))
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
@@ -53,13 +45,13 @@ func findRelevantGenerators(setGenerator *sourcev1.KustomizationSetGenerator, ge
 		}
 
 		if !reflect.ValueOf(field.Interface()).IsNil() {
-			res = append(res, generators[v.Type().Field(i).Name])
+			res = append(res, registered[v.Type().Field(i).Name])
 		}
 	}
 	return res
 }
 
-func mergeGeneratorTemplate(g Generator, setGenerator *sourcev1.KustomizationSetGenerator, kustomizationSetTemplate sourcev1.KustomizationSetTemplate) (sourcev1.KustomizationSetTemplate, error) {
+func mergeGeneratorTemplate(g generators.Generator, setGenerator *sourcev1.KustomizationSetGenerator, kustomizationSetTemplate sourcev1.KustomizationSetTemplate) (sourcev1.KustomizationSetTemplate, error) {
 	// Make a copy of the value from `GetTemplate()` before merge, rather than copying directly into
 	// the provided parameter (which will touch the original resource object returned by client-go)
 	dest := g.GetTemplate(setGenerator).DeepCopy()

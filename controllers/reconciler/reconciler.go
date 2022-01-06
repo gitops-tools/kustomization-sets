@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var defaultGenerators = map[string]generators.Generator{
+var knownGenerators = map[string]generators.Generator{
 	"List": generators.NewListGenerator(),
 }
 
@@ -18,7 +18,7 @@ var defaultGenerators = map[string]generators.Generator{
 func GenerateKustomizations(r *sourcev1.KustomizationSet) ([]kustomizev1.Kustomization, error) {
 	var res []kustomizev1.Kustomization
 	for _, g := range r.Spec.Generators {
-		t, err := generators.Transform(g, defaultGenerators, r.Spec.Template, r)
+		t, err := transform(g, knownGenerators, r.Spec.Template, r)
 		if err != nil {
 			return nil, fmt.Errorf("failed to transform template for set %s: %w", r.GetName(), err)
 		}

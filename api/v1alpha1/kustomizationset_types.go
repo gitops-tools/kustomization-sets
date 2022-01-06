@@ -54,16 +54,51 @@ type GitDirectoryGeneratorItem struct {
 
 // GitRepositoryGenerator generates from a Flux GitRepository.
 type GitRepositoryGenerator struct {
-	RepositoryRef       corev1.LocalObjectReference `json:"repositoryRef"`
-	Directories         []GitDirectoryGeneratorItem `json:"directories,omitempty"`
-	RequeueAfterSeconds *int64                      `json:"requeueAfterSeconds,omitempty"`
-	Template            *KustomizationSetTemplate   `json:"template,omitempty"`
+	RepositoryRef corev1.LocalObjectReference `json:"repositoryRef"`
+	Directories   []GitDirectoryGeneratorItem `json:"directories,omitempty"`
+
+	// The interval at which to check for repository updates.
+	// +required
+	Interval metav1.Duration           `json:"interval"`
+	Template *KustomizationSetTemplate `json:"template,omitempty"`
+}
+
+// PullRequestGenerator defines a generator that queries a Git hosting service
+// for relevant PRs.
+type PullRequestGenerator struct {
+	// The interval at which to check for repository updates.
+	// +required
+	Interval metav1.Duration           `json:"interval"`
+	Template *KustomizationSetTemplate `json:"template,omitempty"`
+
+	// TODO: Fill this out with the rest of the elements from
+	// https://github.com/jenkins-x/go-scm/blob/main/scm/factory/factory.go
+
+	// Determines which git-api protocol to use.
+	// +kubebuilder:validation:Enum=github;gitlab;bitbucketserver
+	// +optional
+	Driver string `json:"driver"`
+	// This is the API endpoint to use.
+	// +kubebuilder:validation:Pattern="^https://"
+	// +required
+	ServerURL string `json:"serverURL"`
+	// This should be the Repo you want to query.
+	Repo string `json:"repo"`
+	// The secret name containing the Git credentials.
+	// For HTTPS repositories the secret must contain username and password
+	// fields.
+	// +optional
+	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
+
+	// Labels is used to filter the PRs that you want to target.
+	Labels []string `json:"labels,omitempty"`
 }
 
 // KustomizationSetGenerator include list item info
 type KustomizationSetGenerator struct {
 	List          *ListGenerator          `json:"list,omitempty"`
 	GitRepository *GitRepositoryGenerator `json:"gitRepository,omitempty"`
+	PullRequest   *PullRequestGenerator   `json:"pullRequest,omitempty"`
 }
 
 // KustomizationSetSpec defines the desired state of KustomizationSet

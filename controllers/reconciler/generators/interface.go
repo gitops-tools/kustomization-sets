@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -14,13 +15,13 @@ type Generator interface {
 
 	// The expected / desired list of parameters is returned, it then will be render and reconciled
 	// against the current state of the Applications in the cluster.
-	GenerateParams(*sourcev1.KustomizationSetGenerator, *sourcev1.KustomizationSet) ([]map[string]string, error)
+	GenerateParams(context.Context, *sourcev1.KustomizationSetGenerator, *sourcev1.KustomizationSet) ([]map[string]string, error)
 
-	// GetRequeueAfter is the the generator can controller the next reconciled loop
+	// GetInterval is the the generator can controller the next reconciled loop
 	//
 	// In case there is more then one generator the time will be the minimum of the times.
-	// In case NoRequeueAfter is empty, it will be ignored
-	GetRequeueAfter(*sourcev1.KustomizationSetGenerator) time.Duration
+	// In case NoRequeueInterval is empty, it will be ignored
+	GetInterval(*sourcev1.KustomizationSetGenerator) time.Duration
 
 	// GetTemplate returns the inline template from the spec if there is any, or
 	// an empty object otherwise
@@ -30,8 +31,8 @@ type Generator interface {
 // EmptyKustomizationSetGeneratorError is returned when KustomizationSet is
 // empty.
 var EmptyKustomizationSetGeneratorError = errors.New("KustomizationSet is empty")
-var NoRequeueAfter time.Duration
+var NoRequeueInterval time.Duration
 
-// DefaultRequeueAfterSeconds is used when GetRequeueAfter is not specified, it
+// DefaultInterval is used when GetInterval is not specified, it
 // is the default time to wait before the next reconcile loop.
 const DefaultRequeueAfterSeconds = 3 * time.Minute

@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +19,7 @@ func NewListGenerator() Generator {
 	return &ListGenerator{}
 }
 
-func (g *ListGenerator) GenerateParams(sg *sourcev1.KustomizationSetGenerator, _ *sourcev1.KustomizationSet) ([]map[string]string, error) {
+func (g *ListGenerator) GenerateParams(_ context.Context, sg *sourcev1.KustomizationSetGenerator, _ *sourcev1.KustomizationSet) ([]map[string]string, error) {
 	if sg == nil {
 		return nil, EmptyKustomizationSetGeneratorError
 	}
@@ -62,9 +63,9 @@ func (g *ListGenerator) GenerateParams(sg *sourcev1.KustomizationSetGenerator, _
 	return res, nil
 }
 
-// GetRequeueAfter is an implementation of the Generator interface.
-func (g *ListGenerator) GetRequeueAfter(sg *sourcev1.KustomizationSetGenerator) time.Duration {
-	return NoRequeueAfter
+// GetInterval is an implementation of the Generator interface.
+func (g *ListGenerator) GetInterval(sg *sourcev1.KustomizationSetGenerator) time.Duration {
+	return NoRequeueInterval
 }
 
 // GetTemplate is an implementation of the Generator interface.
