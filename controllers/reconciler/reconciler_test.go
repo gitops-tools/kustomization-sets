@@ -1,6 +1,7 @@
 package reconciler
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -56,7 +57,7 @@ func TestGenerateKustomizations(t *testing.T) {
 	for _, tt := range listGeneratorTests {
 		t.Run(tt.name, func(t *testing.T) {
 			kset := makeTestKustomizationSet(withListElements(tt.elements, tt.tp))
-			kusts, err := GenerateKustomizations(kset)
+			kusts, err := GenerateKustomizations(context.TODO(), kset)
 			test.AssertNoError(t, err)
 
 			if diff := cmp.Diff(tt.want, kusts); diff != "" {

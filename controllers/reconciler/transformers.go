@@ -1,6 +1,7 @@
 package reconciler
 
 import (
+	"context"
 	"reflect"
 
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
@@ -13,7 +14,7 @@ type transformResult struct {
 	Template sourcev1.KustomizationSetTemplate
 }
 
-func transform(generator sourcev1.KustomizationSetGenerator, allGenerators map[string]generators.Generator, baseTemplate sourcev1.KustomizationSetTemplate, kustomizeSet *sourcev1.KustomizationSet) ([]transformResult, error) {
+func transform(ctx context.Context, generator sourcev1.KustomizationSetGenerator, allGenerators map[string]generators.Generator, baseTemplate sourcev1.KustomizationSetTemplate, kustomizeSet *sourcev1.KustomizationSet) ([]transformResult, error) {
 	res := []transformResult{}
 	generators := findRelevantGenerators(&generator, allGenerators)
 	for _, g := range generators {
@@ -22,7 +23,7 @@ func transform(generator sourcev1.KustomizationSetGenerator, allGenerators map[s
 			return nil, err
 		}
 
-		params, err := g.GenerateParams(&generator, kustomizeSet)
+		params, err := g.GenerateParams(ctx, &generator, kustomizeSet)
 		if err != nil {
 			return nil, err
 		}

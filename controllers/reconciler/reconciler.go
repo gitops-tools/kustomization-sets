@@ -1,6 +1,7 @@
 package reconciler
 
 import (
+	"context"
 	"fmt"
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
@@ -15,10 +16,10 @@ var knownGenerators = map[string]generators.Generator{
 
 // GenerateKustomizations parses the KustomizationSet and creates a
 // Kustomization using the configured generators and templates.
-func GenerateKustomizations(r *sourcev1.KustomizationSet) ([]kustomizev1.Kustomization, error) {
+func GenerateKustomizations(ctx context.Context, r *sourcev1.KustomizationSet) ([]kustomizev1.Kustomization, error) {
 	var res []kustomizev1.Kustomization
 	for _, g := range r.Spec.Generators {
-		t, err := transform(g, knownGenerators, r.Spec.Template, r)
+		t, err := transform(ctx, g, knownGenerators, r.Spec.Template, r)
 		if err != nil {
 			return nil, fmt.Errorf("failed to transform template for set %s: %w", r.GetName(), err)
 		}

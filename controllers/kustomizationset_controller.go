@@ -52,7 +52,7 @@ func (r *KustomizationSetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("kustomization set loaded", "name", kustomizationSet.GetName())
 
-	kustomizations, err := reconciler.GenerateKustomizations(&kustomizationSet)
+	kustomizations, err := reconciler.GenerateKustomizations(ctx, &kustomizationSet)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
