@@ -28,12 +28,14 @@ import (
 
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/controllers/reconciler"
+	"github.com/gitops-tools/kustomize-set-controller/controllers/reconciler/generators"
 )
 
 // KustomizationSetReconciler reconciles a KustomizationSet object
 type KustomizationSetReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme     *runtime.Scheme
+	Generators map[string]generators.Generator
 }
 
 //+kubebuilder:rbac:groups=source.gitops.solutions,resources=kustomizationsets,verbs=get;list;watch;create;update;patch;delete
@@ -52,7 +54,7 @@ func (r *KustomizationSetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("kustomization set loaded", "name", kustomizationSet.GetName())
 
-	kustomizations, err := reconciler.GenerateKustomizations(ctx, &kustomizationSet)
+	kustomizations, err := reconciler.GenerateKustomizations(ctx, &kustomizationSet, r.Generators)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

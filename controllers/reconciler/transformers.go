@@ -36,7 +36,7 @@ func transform(ctx context.Context, generator sourcev1.KustomizationSetGenerator
 	return res, nil
 }
 
-func findRelevantGenerators(setGenerator *sourcev1.KustomizationSetGenerator, registered map[string]generators.Generator) []generators.Generator {
+func findRelevantGenerators(setGenerator *sourcev1.KustomizationSetGenerator, allGenerators map[string]generators.Generator) []generators.Generator {
 	var res []generators.Generator
 	v := reflect.Indirect(reflect.ValueOf(setGenerator))
 	for i := 0; i < v.NumField(); i++ {
@@ -46,7 +46,7 @@ func findRelevantGenerators(setGenerator *sourcev1.KustomizationSetGenerator, re
 		}
 
 		if !reflect.ValueOf(field.Interface()).IsNil() {
-			res = append(res, registered[v.Type().Field(i).Name])
+			res = append(res, allGenerators[v.Type().Field(i).Name])
 		}
 	}
 	return res

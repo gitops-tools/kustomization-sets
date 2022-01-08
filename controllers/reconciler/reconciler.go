@@ -10,16 +10,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var knownGenerators = map[string]generators.Generator{
-	"List": generators.NewListGenerator(),
-}
-
 // GenerateKustomizations parses the KustomizationSet and creates a
 // Kustomization using the configured generators and templates.
-func GenerateKustomizations(ctx context.Context, r *sourcev1.KustomizationSet) ([]kustomizev1.Kustomization, error) {
+func GenerateKustomizations(ctx context.Context, r *sourcev1.KustomizationSet, configuredGenerators map[string]generators.Generator) ([]kustomizev1.Kustomization, error) {
 	var res []kustomizev1.Kustomization
 	for _, g := range r.Spec.Generators {
-		t, err := transform(ctx, g, knownGenerators, r.Spec.Template, r)
+		t, err := transform(ctx, g, configuredGenerators, r.Spec.Template, r)
 		if err != nil {
 			return nil, fmt.Errorf("failed to transform template for set %s: %w", r.GetName(), err)
 		}
