@@ -66,6 +66,7 @@ func (g *PullRequestGenerator) GenerateParams(ctx context.Context, sg *sourcev1.
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
+
 	prs, _, err := scmClient.PullRequests.List(ctx, sg.PullRequest.Repo, listOptionsFromConfig(sg.PullRequest))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pull requests: %w", err)
@@ -73,6 +74,9 @@ func (g *PullRequestGenerator) GenerateParams(ctx context.Context, sg *sourcev1.
 	g.Logger.Info("queried pull requests", "repo", sg.PullRequest.Repo, "count", len(prs))
 	res := []map[string]string{}
 	for _, pr := range prs {
+		if !prMatchesLabels(pr, sg.PullRequest.Labels) {
+			continue
+		}
 		res = append(res, map[string]string{
 			"number":   strconv.Itoa(pr.Number),
 			"branch":   pr.Head.Ref,
@@ -84,7 +88,7 @@ func (g *PullRequestGenerator) GenerateParams(ctx context.Context, sg *sourcev1.
 
 // GetInterval is an implementation of the Generator interface.
 func (g *PullRequestGenerator) GetInterval(sg *sourcev1.KustomizationSetGenerator) time.Duration {
-	return NoRequeueInterval
+	return sg.PullRequest.Interval.Duration
 }
 
 // GetTemplate is an implementation of the Generator interface.
@@ -92,29 +96,28 @@ func (g *PullRequestGenerator) GetTemplate(sg *sourcev1.KustomizationSetGenerato
 	return sg.PullRequest.Template
 }
 
-// TODO: think about how to configure the limiting options.
+// label filtering is only supported by GitLab (that I'm aware of)
+// The fetched PRs are filtered on labels across all providers, but providing
+// the labels optimises the load from GitLab.
+//
+// TODO: How should we apply pagination/limiting of fetched PRs?
 func listOptionsFromConfig(c *sourcev1.PullRequestGenerator) scm.PullRequestListOptions {
-	// TODO: labels!
 	return scm.PullRequestListOptions{
-		Size: 20,
+		Size:   20,
+		Labels: c.Labels,
 	}
 }
 
-// // Determines which git-api protocol to use.
-// // +kubebuilder:validation:Enum=github;gitlab;bitbucketserver
-// // +optional
-// Driver string `json:"driver"`
-// // This is the API endpoint to use.
-// // +kubebuilder:validation:Pattern="^https://"
-// // +required
-// ServerURL string `json:"serverURL"`
-// // This should be the Repo you want to query.
-// Repo string `json:"repo"`
-// // The secret name containing the Git credentials.
-// // For HTTPS repositories the secret must contain username and password
-// // fields.
-// // +optional
-// SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
-
-// // Labels is used to filter the PRs that you want to target.
-// Labels []string `json:"labels,omitempty"`
+func prMatchesLabels(pr *scm.PullRequest, labels []string) bool {
+	if len(labels) == 0 {
+		return true
+	}
+	for _, v := range pr.Labels {
+		for _, l := range labels {
+			if v.Name == l {
+				return true
+			}
+		}
+	}
+	return false
+}
