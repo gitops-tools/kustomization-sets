@@ -7,6 +7,7 @@ require (
 	github.com/fluxcd/pkg/apis/meta v0.10.1
 	github.com/fluxcd/pkg/runtime v0.12.2
 	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/zapr v0.4.0
 	github.com/google/go-cmp v0.5.5
 	github.com/imdario/mergo v0.3.12
 	github.com/jenkins-x/go-scm v1.10.11

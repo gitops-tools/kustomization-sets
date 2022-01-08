@@ -1481,7 +1481,6 @@ spec:
                       required:
                       - interval
                       - repo
-                      - serverURL
                       type: object
                   type: object
                 type: array

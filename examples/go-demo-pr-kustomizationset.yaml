@@ -1,0 +1,23 @@
+apiVersion: source.gitops.solutions/v1alpha1
+kind: KustomizationSet
+metadata:
+  name: go-demo-set
+  namespace: default
+spec:
+  generators:
+  - pullRequest:
+      interval: 5m
+      driver: github
+      repo: bigkevmcd/go-demo
+  template:
+    metadata:
+      name: "{{branch}}-demo"
+      namespace: default
+    spec:
+      interval: 5m
+      path: "./examples/kustomize/environments/dev"
+      prune: true
+      targetNamespace: "{{branch}}"
+      sourceRef:
+        kind: GitRepository
+        name: go-demo-repo

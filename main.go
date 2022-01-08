@@ -66,7 +66,8 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	zapLog := zap.New(zap.UseFlagOptions(&opts))
+	ctrl.SetLogger(zapLog)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -86,6 +87,10 @@ func main() {
 		Scheme: mgr.GetScheme(),
 		Generators: map[string]generators.Generator{
 			"List": generators.NewListGenerator(),
+			"PullRequest": generators.NewPullRequestGenerator(
+				zapLog,
+				mgr.GetClient(),
+			),
 		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KustomizationSet")

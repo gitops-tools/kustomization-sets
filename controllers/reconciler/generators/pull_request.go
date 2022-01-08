@@ -34,11 +34,14 @@ func NewPullRequestGenerator(l logr.Logger, c client.Client) *PullRequestGenerat
 }
 
 func (g *PullRequestGenerator) GenerateParams(ctx context.Context, sg *sourcev1.KustomizationSetGenerator, ks *sourcev1.KustomizationSet) ([]map[string]string, error) {
+	g.Logger.Info("generating params", "repo", sg.PullRequest.Repo)
 	if sg == nil {
+		g.Logger.Info("no generator provided")
 		return nil, EmptyKustomizationSetGeneratorError
 	}
 
 	if sg.PullRequest == nil {
+		g.Logger.Info("pull request configuration is nil")
 		return nil, nil
 	}
 
@@ -57,6 +60,7 @@ func (g *PullRequestGenerator) GenerateParams(ctx context.Context, sg *sourcev1.
 		// for details of the standard flux Git repository secret.
 		authToken = string(secret.Data["password"])
 	}
+	g.Logger.Info("querying pull requests", "repo", sg.PullRequest.Repo, "driver", sg.PullRequest.Driver, "serverURL", sg.PullRequest.ServerURL)
 
 	scmClient, err := g.clientFactory(sg.PullRequest.Driver, sg.PullRequest.ServerURL, authToken)
 	if err != nil {
@@ -66,6 +70,7 @@ func (g *PullRequestGenerator) GenerateParams(ctx context.Context, sg *sourcev1.
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pull requests: %w", err)
 	}
+	g.Logger.Info("queried pull requests", "repo", sg.PullRequest.Repo, "count", len(prs))
 	res := []map[string]string{}
 	for _, pr := range prs {
 		res = append(res, map[string]string{
@@ -84,7 +89,7 @@ func (g *PullRequestGenerator) GetInterval(sg *sourcev1.KustomizationSetGenerato
 
 // GetTemplate is an implementation of the Generator interface.
 func (g *PullRequestGenerator) GetTemplate(sg *sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate {
-	return sg.List.Template
+	return sg.PullRequest.Template
 }
 
 // TODO: think about how to configure the limiting options.

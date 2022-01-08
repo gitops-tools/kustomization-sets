@@ -80,8 +80,7 @@ type PullRequestGenerator struct {
 	Driver string `json:"driver"`
 	// This is the API endpoint to use.
 	// +kubebuilder:validation:Pattern="^https://"
-	// +required
-	ServerURL string `json:"serverURL"`
+	ServerURL string `json:"serverURL,omitempty"`
 	// This should be the Repo you want to query.
 	Repo string `json:"repo"`
 	// The secret name containing the Git credentials.
