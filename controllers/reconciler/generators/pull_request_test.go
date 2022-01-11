@@ -22,13 +22,20 @@ import (
 var _ Generator = (*PullRequestGenerator)(nil)
 
 func TestPullRequestGenerator_GenerateParams(t *testing.T) {
+	defaultClientFactory := func(c *scm.Client) clientFactoryFunc {
+		return func(_, _, _ string, opts ...factory.ClientOptionFunc) (*scm.Client, error) {
+			return c, nil
+		}
+	}
+
 	testCases := []struct {
-		name      string
-		dataFunc  func(*fakescm.Data)
-		initObjs  []runtime.Object
-		secretRef *corev1.LocalObjectReference
-		labels    []string
-		want      []map[string]string
+		name          string
+		dataFunc      func(*fakescm.Data)
+		initObjs      []runtime.Object
+		secretRef     *corev1.LocalObjectReference
+		labels        []string
+		clientFactory func(*scm.Client) clientFactoryFunc
+		want          []map[string]string
 	}{
 		{
 			name: "simple unfiltered PR",
@@ -47,6 +54,7 @@ func TestPullRequestGenerator_GenerateParams(t *testing.T) {
 					},
 				}
 			},
+			clientFactory: defaultClientFactory,
 			want: []map[string]string{
 				{
 					"number":   "1",
@@ -85,9 +93,9 @@ func TestPullRequestGenerator_GenerateParams(t *testing.T) {
 					},
 					Labels: []*scm.Label{{Name: "testing"}},
 				}
-
 			},
-			labels: []string{"testing"},
+			labels:        []string{"testing"},
+			clientFactory: defaultClientFactory,
 			want: []map[string]string{
 				{
 					"number":   "2",
@@ -103,9 +111,7 @@ func TestPullRequestGenerator_GenerateParams(t *testing.T) {
 			gen := NewPullRequestGenerator(logr.Discard(), fake.NewFakeClient(tt.initObjs...))
 			client, data := fakescm.NewDefault()
 			tt.dataFunc(data)
-			gen.clientFactory = func(_, _, _ string, opts ...factory.ClientOptionFunc) (*scm.Client, error) {
-				return client, nil
-			}
+			gen.clientFactory = tt.clientFactory(client)
 			got, err := gen.GenerateParams(context.TODO(), &sourcev1.KustomizationSetGenerator{
 				PullRequest: &sourcev1.PullRequestGenerator{
 					Driver:    "fake",
