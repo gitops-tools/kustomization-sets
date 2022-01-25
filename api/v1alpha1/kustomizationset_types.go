@@ -44,17 +44,14 @@ type KustomizationSetTemplate struct {
 type ListGenerator struct {
 	Elements []apiextensionsv1.JSON `json:"elements"`
 
+	// Template fields to overlay on top of the KustomizationSet template.
+	// +optional
 	Template *KustomizationSetTemplate `json:"template,omitempty"`
 }
 
 // PullRequestGenerator defines a generator that queries a Git hosting service
 // for relevant PRs.
 type PullRequestGenerator struct {
-	// The interval at which to check for repository updates.
-	// +required
-	Interval metav1.Duration           `json:"interval"`
-	Template *KustomizationSetTemplate `json:"template,omitempty"`
-
 	// TODO: Fill this out with the rest of the elements from
 	// https://github.com/jenkins-x/go-scm/blob/main/scm/factory/factory.go
 
@@ -78,12 +75,39 @@ type PullRequestGenerator struct {
 	// This may be applied on the server.
 	// +optional
 	Labels []string `json:"labels,omitempty"`
+
+	// The interval at which to check for repository updates.
+	// +required
+	Interval metav1.Duration `json:"interval"`
+	// Template fields to overlay on top of the KustomizationSet template.
+	// +optional
+	Template *KustomizationSetTemplate `json:"template,omitempty"`
+}
+
+// GitDirectoryGeneratorItem represents a path to be scanned in a repository.
+type GitDirectoryGeneratorItem struct {
+	Path    string `json:"path"`
+	Exclude bool   `json:"exclude,omitempty"`
+}
+
+// GitRepositoryGenerator generates from a Flux GitRepository.
+type GitRepositoryGenerator struct {
+	RepositoryRef corev1.LocalObjectReference `json:"repositoryRef"`
+	Directories   []GitDirectoryGeneratorItem `json:"directories,omitempty"`
+
+	// The interval at which to check for repository updates.
+	// +required
+	Interval metav1.Duration `json:"interval"`
+	// Template fields to overlay on top of the KustomizationSet template.
+	// +optional
+	Template *KustomizationSetTemplate `json:"template,omitempty"`
 }
 
 // KustomizationSetGenerator include list item info
 type KustomizationSetGenerator struct {
-	List        *ListGenerator        `json:"list,omitempty"`
-	PullRequest *PullRequestGenerator `json:"pullRequest,omitempty"`
+	List          *ListGenerator          `json:"list,omitempty"`
+	PullRequest   *PullRequestGenerator   `json:"pullRequest,omitempty"`
+	GitRepository *GitRepositoryGenerator `json:"gitRepository,omitempty"`
 }
 
 // KustomizationSetSpec defines the desired state of KustomizationSet
