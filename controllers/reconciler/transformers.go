@@ -23,7 +23,7 @@ func transform(ctx context.Context, generator sourcev1.KustomizationSetGenerator
 			return nil, err
 		}
 
-		params, err := g.GenerateParams(ctx, &generator, kustomizeSet)
+		params, err := g.Generate(ctx, &generator, kustomizeSet)
 		if err != nil {
 			return nil, err
 		}
@@ -53,9 +53,9 @@ func findRelevantGenerators(setGenerator *sourcev1.KustomizationSetGenerator, al
 }
 
 func mergeGeneratorTemplate(g generators.Generator, setGenerator *sourcev1.KustomizationSetGenerator, kustomizationSetTemplate sourcev1.KustomizationSetTemplate) (sourcev1.KustomizationSetTemplate, error) {
-	// Make a copy of the value from `GetTemplate()` before merge, rather than copying directly into
+	// Make a copy of the value from `Template()` before merge, rather than copying directly into
 	// the provided parameter (which will touch the original resource object returned by client-go)
-	dest := g.GetTemplate(setGenerator).DeepCopy()
+	dest := g.Template(setGenerator).DeepCopy()
 	if dest == nil {
 		return kustomizationSetTemplate, nil
 	}

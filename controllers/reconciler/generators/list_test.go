@@ -2,6 +2,7 @@ package generators
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
@@ -28,7 +29,7 @@ func TestGenerateListParams(t *testing.T) {
 
 	for _, tt := range testCases {
 		gen := NewListGenerator()
-		got, err := gen.GenerateParams(context.TODO(), &sourcev1.KustomizationSetGenerator{
+		got, err := gen.Generate(context.TODO(), &sourcev1.KustomizationSetGenerator{
 			List: &sourcev1.ListGenerator{
 				Elements: tt.elements,
 			},
@@ -38,5 +39,43 @@ func TestGenerateListParams(t *testing.T) {
 		if diff := cmp.Diff(tt.want, got); diff != "" {
 			t.Fatalf("failed to generate pull requests:\n%s", diff)
 		}
+	}
+}
+
+func TestListGenerator_Interval(t *testing.T) {
+	gen := NewListGenerator()
+	sg := &sourcev1.KustomizationSetGenerator{
+		List: &sourcev1.ListGenerator{
+			Elements: []apiextensionsv1.JSON{{Raw: []byte(`{"cluster": "cluster","url": "url"}`)}},
+		},
+	}
+
+	d := gen.Interval(sg)
+
+	if d != NoRequeueInterval {
+		t.Fatalf("got %#v want %#v", d, NoRequeueInterval)
+	}
+}
+
+func TestListGenerator_GetTemplate(t *testing.T) {
+	template := &sourcev1.KustomizationSetTemplate{
+		KustomizationSetTemplateMeta: sourcev1.KustomizationSetTemplateMeta{
+			Labels: map[string]string{
+				"cluster.app/name": "{{ cluster }}",
+			},
+		},
+	}
+	gen := NewListGenerator()
+	sg := &sourcev1.KustomizationSetGenerator{
+		List: &sourcev1.ListGenerator{
+			Elements: []apiextensionsv1.JSON{{Raw: []byte(`{"cluster": "cluster","url": "url"}`)}},
+			Template: template,
+		},
+	}
+
+	tpl := gen.Template(sg)
+
+	if !reflect.DeepEqual(tpl, template) {
+		t.Fatalf("got %#v want %#v", tpl, template)
 	}
 }

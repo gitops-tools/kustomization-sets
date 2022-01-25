@@ -19,7 +19,7 @@ func NewListGenerator() Generator {
 	return &ListGenerator{}
 }
 
-func (g *ListGenerator) GenerateParams(_ context.Context, sg *sourcev1.KustomizationSetGenerator, _ *sourcev1.KustomizationSet) ([]map[string]string, error) {
+func (g *ListGenerator) Generate(_ context.Context, sg *sourcev1.KustomizationSetGenerator, _ *sourcev1.KustomizationSet) ([]map[string]string, error) {
 	if sg == nil {
 		return nil, EmptyKustomizationSetGeneratorError
 	}
@@ -63,12 +63,12 @@ func (g *ListGenerator) GenerateParams(_ context.Context, sg *sourcev1.Kustomiza
 	return res, nil
 }
 
-// GetInterval is an implementation of the Generator interface.
-func (g *ListGenerator) GetInterval(sg *sourcev1.KustomizationSetGenerator) time.Duration {
+// Interval is an implementation of the Generator interface.
+func (g *ListGenerator) Interval(sg *sourcev1.KustomizationSetGenerator) time.Duration {
 	return NoRequeueInterval
 }
 
-// GetTemplate is an implementation of the Generator interface.
-func (g *ListGenerator) GetTemplate(sg *sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate {
+// Template is an implementation of the Generator interface.
+func (g *ListGenerator) Template(sg *sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate {
 	return sg.List.Template
 }

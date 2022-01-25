@@ -21,7 +21,7 @@ import (
 
 var _ Generator = (*PullRequestGenerator)(nil)
 
-func TestPullRequestGenerator_GenerateParams(t *testing.T) {
+func TestPullRequestGenerator_Generate(t *testing.T) {
 	defaultClientFactory := func(c *scm.Client) clientFactoryFunc {
 		return func(_, _, _ string, opts ...factory.ClientOptionFunc) (*scm.Client, error) {
 			return c, nil
@@ -112,7 +112,7 @@ func TestPullRequestGenerator_GenerateParams(t *testing.T) {
 			client, data := fakescm.NewDefault()
 			tt.dataFunc(data)
 			gen.clientFactory = tt.clientFactory(client)
-			got, err := gen.GenerateParams(context.TODO(), &sourcev1.KustomizationSetGenerator{
+			got, err := gen.Generate(context.TODO(), &sourcev1.KustomizationSetGenerator{
 				PullRequest: &sourcev1.PullRequestGenerator{
 					Driver:    "fake",
 					ServerURL: "https://example.com",
@@ -142,7 +142,7 @@ func TestPullRequestGenerator_GetInterval(t *testing.T) {
 		},
 	}
 
-	d := gen.GetInterval(sg)
+	d := gen.Interval(sg)
 
 	if d != interval {
 		t.Fatalf("got %#v want %#v", d, interval)
@@ -168,7 +168,7 @@ func TestPullRequestGenerator_GetTemplate(t *testing.T) {
 		},
 	}
 
-	tpl := gen.GetTemplate(sg)
+	tpl := gen.Template(sg)
 
 	if !reflect.DeepEqual(tpl, template) {
 		t.Fatalf("got %#v want %#v", tpl, template)

@@ -42,24 +42,8 @@ type KustomizationSetTemplate struct {
 
 // ListGenerator generates from a hard-coded list.
 type ListGenerator struct {
-	Elements []apiextensionsv1.JSON    `json:"elements"`
-	Template *KustomizationSetTemplate `json:"template,omitempty"`
-}
+	Elements []apiextensionsv1.JSON `json:"elements"`
 
-// GitDirectoryGeneratorItem represents a path to be scanned in a repository.
-type GitDirectoryGeneratorItem struct {
-	Path    string `json:"path"`
-	Exclude bool   `json:"exclude,omitempty"`
-}
-
-// GitRepositoryGenerator generates from a Flux GitRepository.
-type GitRepositoryGenerator struct {
-	RepositoryRef corev1.LocalObjectReference `json:"repositoryRef"`
-	Directories   []GitDirectoryGeneratorItem `json:"directories,omitempty"`
-
-	// The interval at which to check for repository updates.
-	// +required
-	Interval metav1.Duration           `json:"interval"`
 	Template *KustomizationSetTemplate `json:"template,omitempty"`
 }
 
@@ -76,12 +60,13 @@ type PullRequestGenerator struct {
 
 	// Determines which git-api protocol to use.
 	// +kubebuilder:validation:Enum=github;gitlab;bitbucketserver
-	// +optional
 	Driver string `json:"driver"`
 	// This is the API endpoint to use.
 	// +kubebuilder:validation:Pattern="^https://"
 	ServerURL string `json:"serverURL,omitempty"`
 	// This should be the Repo you want to query.
+	// e.g. my-org/my-repo
+	// +required
 	Repo string `json:"repo"`
 	// The secret name containing the Git credentials.
 	// For HTTPS repositories the secret must contain username and password
@@ -90,14 +75,15 @@ type PullRequestGenerator struct {
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 
 	// Labels is used to filter the PRs that you want to target.
+	// This may be applied on the server.
+	// +optional
 	Labels []string `json:"labels,omitempty"`
 }
 
 // KustomizationSetGenerator include list item info
 type KustomizationSetGenerator struct {
-	List          *ListGenerator          `json:"list,omitempty"`
-	GitRepository *GitRepositoryGenerator `json:"gitRepository,omitempty"`
-	PullRequest   *PullRequestGenerator   `json:"pullRequest,omitempty"`
+	List        *ListGenerator        `json:"list,omitempty"`
+	PullRequest *PullRequestGenerator `json:"pullRequest,omitempty"`
 }
 
 // KustomizationSetSpec defines the desired state of KustomizationSet

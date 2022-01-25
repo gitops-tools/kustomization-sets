@@ -33,7 +33,7 @@ func NewPullRequestGenerator(l logr.Logger, c client.Client) *PullRequestGenerat
 	}
 }
 
-func (g *PullRequestGenerator) GenerateParams(ctx context.Context, sg *sourcev1.KustomizationSetGenerator, ks *sourcev1.KustomizationSet) ([]map[string]string, error) {
+func (g *PullRequestGenerator) Generate(ctx context.Context, sg *sourcev1.KustomizationSetGenerator, ks *sourcev1.KustomizationSet) ([]map[string]string, error) {
 	g.Logger.Info("generating params", "repo", sg.PullRequest.Repo)
 	if sg == nil {
 		g.Logger.Info("no generator provided")
@@ -86,13 +86,13 @@ func (g *PullRequestGenerator) GenerateParams(ctx context.Context, sg *sourcev1.
 	return res, nil
 }
 
-// GetInterval is an implementation of the Generator interface.
-func (g *PullRequestGenerator) GetInterval(sg *sourcev1.KustomizationSetGenerator) time.Duration {
+// Interval is an implementation of the Generator interface.
+func (g *PullRequestGenerator) Interval(sg *sourcev1.KustomizationSetGenerator) time.Duration {
 	return sg.PullRequest.Interval.Duration
 }
 
-// GetTemplate is an implementation of the Generator interface.
-func (g *PullRequestGenerator) GetTemplate(sg *sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate {
+// Template is an implementation of the Generator interface.
+func (g *PullRequestGenerator) Template(sg *sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate {
 	return sg.PullRequest.Template
 }
 
