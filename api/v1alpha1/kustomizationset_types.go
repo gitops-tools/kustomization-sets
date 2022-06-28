@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,6 +79,10 @@ type PullRequestGenerator struct {
 	// This may be applied on the server.
 	// +optional
 	Labels []string `json:"labels,omitempty"`
+
+	// GitRepositorySpec provides the spec for generating a GitRepository to
+	// make the branch available from.
+	GitRepositorySpec sourcev1.GitRepositorySpec `json:"gitRepositorySpec"`
 }
 
 // KustomizationSetGenerator include list item info
