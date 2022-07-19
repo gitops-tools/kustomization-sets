@@ -106,7 +106,7 @@ func makeTestKustomizationSet(opts ...func(*sourcev1.KustomizationSet)) *sourcev
 						Name: "demo-repo",
 					},
 					KubeConfig: &kustomizev1.KubeConfig{
-						SecretRef: meta.LocalObjectReference{
+						SecretRef: meta.SecretKeyReference{
 							Name: "{{cluster}}",
 						},
 					},
@@ -140,7 +140,7 @@ func makeTestKustomization(name string, opts ...func(*kustomizev1.Kustomization)
 				Name: "demo-repo",
 			},
 			KubeConfig: &kustomizev1.KubeConfig{
-				SecretRef: meta.LocalObjectReference{
+				SecretRef: meta.SecretKeyReference{
 					Name: name,
 				},
 			},

@@ -102,7 +102,7 @@ func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
 						Name: "demo-repo",
 					},
 					KubeConfig: &kustomizev1.KubeConfig{
-						SecretRef: meta.LocalObjectReference{
+						SecretRef: meta.SecretKeyReference{
 							Name: "{{cluster}}",
 						},
 					},

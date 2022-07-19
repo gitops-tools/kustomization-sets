@@ -6,3 +6,5 @@ metadata:
 spec:
   interval: 15m
   url: https://github.com/bigkevmcd/go-demo
+  ref:
+    branch: main

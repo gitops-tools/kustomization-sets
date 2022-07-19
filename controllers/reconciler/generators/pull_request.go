@@ -101,8 +101,8 @@ func (g *PullRequestGenerator) Template(sg *sourcev1.KustomizationSetGenerator) 
 // the labels optimises the load from GitLab.
 //
 // TODO: How should we apply pagination/limiting of fetched PRs?
-func listOptionsFromConfig(c *sourcev1.PullRequestGenerator) scm.PullRequestListOptions {
-	return scm.PullRequestListOptions{
+func listOptionsFromConfig(c *sourcev1.PullRequestGenerator) *scm.PullRequestListOptions {
+	return &scm.PullRequestListOptions{
 		Size:   20,
 		Labels: c.Labels,
 	}
