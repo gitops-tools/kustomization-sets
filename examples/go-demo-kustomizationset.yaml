@@ -12,8 +12,11 @@ spec:
       - env: staging
   template:
     metadata:
-      name: '{{env}}-demo'
+      name: "{{ env }}-demo"
       namespace: default
+      labels:
+        app.kubernetes.io/name: go-demo
+        app.kubernetes.io/instance: "{{ env }}"
     spec:
       interval: 5m
       path: "./examples/kustomize/environments/{{ env }}"
