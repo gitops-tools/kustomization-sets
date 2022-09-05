@@ -1,77 +1,110 @@
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package controllers
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/fluxcd/pkg/apis/meta"
-	"github.com/fluxcd/pkg/runtime/testenv"
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 )
 
-const (
-	timeout  = 10 * time.Second
-	interval = 1 * time.Second
-)
+func TestReconciliation(t *testing.T) {
+	testEnv := &envtest.Environment{
+		ErrorIfCRDPathMissing: true,
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "config", "crd", "bases"),
+			"testdata/crds",
+		},
+	}
+	cfg, err := testEnv.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-var (
-	testEnv *testenv.Environment
-	ctx     = ctrl.SetupSignalHandler()
-)
+	if err := kustomizev1.AddToScheme(scheme.Scheme); err != nil {
+		t.Fatal(err)
+	}
+	if err := sourcev1alpha1.AddToScheme(scheme.Scheme); err != nil {
+		t.Fatal(err)
+	}
 
-func TestMain(m *testing.M) {
-	utilruntime.Must(kustomizev1.AddToScheme(scheme.Scheme))
-	utilruntime.Must(sourcev1alpha1.AddToScheme(scheme.Scheme))
-	testEnv = testenv.New(
-		testenv.WithCRDPath(filepath.Join("..", "config", "crd", "bases")),
-		testenv.WithCRDPath("testdata/crds"))
+	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	if err := (&KustomizationSetReconciler{
-		Client: testEnv,
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme.Scheme})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reconciler := &KustomizationSetReconciler{
+		Client: k8sClient,
 		Generators: map[string]generators.Generator{
 			"List": generators.NewListGenerator(),
 		},
-	}).SetupWithManager(testEnv); err != nil {
-		panic(fmt.Sprintf("Failed to start KustomizationSetReconciler: %v", err))
 	}
 
-	go func() {
-		fmt.Println("Starting the test environment")
-		if err := testEnv.Start(ctx); err != nil {
-			panic(fmt.Sprintf("Failed to start the test environment manager: %v", err))
+	if err := reconciler.SetupWithManager(mgr); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("reconciling creation of new resources", func(t *testing.T) {
+		ctx := context.TODO()
+		kz := newKustomizationSet()
+		if err := k8sClient.Create(ctx, kz); err != nil {
+			t.Fatal(err)
 		}
-	}()
-	<-testEnv.Manager.Elected()
+		defer cleanupResource(t, k8sClient, kz)
 
-	code := m.Run()
+		_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(kz)})
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	fmt.Println("Stopping the test environment")
-	if err := testEnv.Stop(); err != nil {
-		panic(fmt.Sprintf("Failed to stop the test environment: %v", err))
-	}
-	os.Exit(code)
+		updated := &sourcev1alpha1.KustomizationSet{}
+		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(kz), updated); err != nil {
+			t.Fatal(err)
+		}
+		if l := len(updated.Status.Inventory.Entries); l != 3 {
+			t.Fatalf("expected 3 items, got %v", l)
+		}
+	})
 }
 
-func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
-	g := NewWithT(t)
-	ctx := context.TODO()
+func cleanupResource(t *testing.T, cl client.Client, obj client.Object) {
+	if err := cl.Delete(context.TODO(), obj); err != nil {
+		t.Fatal(err)
+	}
+}
 
-	ks := &sourcev1alpha1.KustomizationSet{
+func newKustomizationSet() *sourcev1alpha1.KustomizationSet {
+	return &sourcev1alpha1.KustomizationSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "demo-set",
 			Namespace: "default",
@@ -110,89 +143,4 @@ func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
 			},
 		},
 	}
-	g.Expect(testEnv.Create(ctx, ks)).To(Succeed())
-	key := client.ObjectKey{Name: ks.Name, Namespace: ks.Namespace}
-
-	var kustomizationList kustomizev1.KustomizationList
-	g.Eventually(func() int {
-		if err := testEnv.List(ctx, &kustomizationList, client.InNamespace(ks.Namespace)); err != nil {
-			return 0
-		}
-		return len(kustomizationList.Items)
-	}, timeout).Should(Equal(3))
-
-	g.Expect(testEnv.Delete(ctx, ks)).To(Succeed())
-
-	// Wait for GitRepository to be deleted
-	g.Eventually(func() bool {
-		if err := testEnv.Get(ctx, key, ks); err != nil {
-			return apierrors.IsNotFound(err)
-		}
-		return false
-	}, timeout).Should(BeTrue())
-}
-
-func TestKustomizationSetReconciler_Reconcile_deleted_resources(t *testing.T) {
-	g := NewWithT(t)
-	ctx := context.TODO()
-
-	ks := &sourcev1alpha1.KustomizationSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "demo-set",
-			Namespace: "default",
-		},
-		Spec: sourcev1alpha1.KustomizationSetSpec{
-			Generators: []sourcev1alpha1.KustomizationSetGenerator{
-				{
-					List: &sourcev1alpha1.ListGenerator{
-						Elements: []apiextensionsv1.JSON{
-							{Raw: []byte(`{"cluster": "engineering-dev"}`)},
-							{Raw: []byte(`{"cluster": "engineering-prod"}`)},
-							{Raw: []byte(`{"cluster": "engineering-preprod"}`)},
-						},
-					},
-				},
-			},
-			Template: sourcev1alpha1.KustomizationSetTemplate{
-				KustomizationSetTemplateMeta: sourcev1alpha1.KustomizationSetTemplateMeta{
-					Name:      `{{.cluster}}-demo`,
-					Namespace: "default",
-				},
-				Spec: kustomizev1.KustomizationSpec{
-					Interval: metav1.Duration{Duration: 5 * time.Minute},
-					Path:     "./clusters/{{.cluster}}/",
-					Prune:    true,
-					SourceRef: kustomizev1.CrossNamespaceSourceReference{
-						Kind: "GitRepository",
-						Name: "demo-repo",
-					},
-					KubeConfig: &kustomizev1.KubeConfig{
-						SecretRef: meta.SecretKeyReference{
-							Name: "{{.cluster}}",
-						},
-					},
-				},
-			},
-		},
-	}
-	g.Expect(testEnv.Create(ctx, ks)).To(Succeed())
-	key := client.ObjectKey{Name: ks.Name, Namespace: ks.Namespace}
-
-	var kustomizationList kustomizev1.KustomizationList
-	g.Eventually(func() int {
-		if err := testEnv.List(ctx, &kustomizationList, client.InNamespace(ks.Namespace)); err != nil {
-			return 0
-		}
-		return len(kustomizationList.Items)
-	}, timeout).Should(Equal(3))
-
-	g.Expect(testEnv.Delete(ctx, ks)).To(Succeed())
-
-	// Wait for GitRepository to be deleted
-	g.Eventually(func() bool {
-		if err := testEnv.Get(ctx, key, ks); err != nil {
-			return apierrors.IsNotFound(err)
-		}
-		return false
-	}, timeout).Should(BeTrue())
 }

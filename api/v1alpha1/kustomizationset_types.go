@@ -94,6 +94,12 @@ type KustomizationSetSpec struct {
 
 // KustomizationSetStatus defines the observed state of KustomizationSet
 type KustomizationSetStatus struct {
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// Inventory contains the list of Kubernetes resource object references that have been successfully applied.
+	// +optional
+	Inventory *ResourceInventory `json:"inventory,omitempty"`
 }
 
 //+kubebuilder:object:root=true
