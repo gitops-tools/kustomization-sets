@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomize-set-controller/controllers/reconciler/generators"
+	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 	"github.com/imdario/mergo"
 )
 

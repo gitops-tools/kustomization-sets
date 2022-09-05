@@ -34,7 +34,7 @@ import (
 
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/controllers"
-	"github.com/gitops-tools/kustomize-set-controller/controllers/reconciler/generators"
+	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 	//+kubebuilder:scaffold:imports
 )
 
