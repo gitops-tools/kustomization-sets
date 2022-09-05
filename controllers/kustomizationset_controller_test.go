@@ -90,12 +90,12 @@ func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
 			},
 			Template: sourcev1alpha1.KustomizationSetTemplate{
 				KustomizationSetTemplateMeta: sourcev1alpha1.KustomizationSetTemplateMeta{
-					Name:      `{{cluster}}-demo`,
+					Name:      `{{.cluster}}-demo`,
 					Namespace: "default",
 				},
 				Spec: kustomizev1.KustomizationSpec{
 					Interval: metav1.Duration{Duration: 5 * time.Minute},
-					Path:     "./clusters/{{cluster}}/",
+					Path:     "./clusters/{{.cluster}}/",
 					Prune:    true,
 					SourceRef: kustomizev1.CrossNamespaceSourceReference{
 						Kind: "GitRepository",
@@ -103,7 +103,7 @@ func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
 					},
 					KubeConfig: &kustomizev1.KubeConfig{
 						SecretRef: meta.SecretKeyReference{
-							Name: "{{cluster}}",
+							Name: "{{.cluster}}",
 						},
 					},
 				},

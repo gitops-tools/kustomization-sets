@@ -1,69 +1,58 @@
 package reconciler
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-	"strconv"
-	"strings"
+	"text/template"
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
-	"github.com/valyala/fasttemplate"
+	"github.com/gitops-tools/pkg/sanitize"
 )
+
+var funcMap = template.FuncMap{
+	"sanitize": sanitize.SanitizeDNSName,
+}
 
 func renderTemplateParams(tmpl *kustomizev1.Kustomization, params map[string]string) (*kustomizev1.Kustomization, error) {
 	if tmpl == nil {
-		return nil, fmt.Errorf("application template is empty ")
+		return nil, errors.New("application template is empty ")
 	}
 
 	if len(params) == 0 {
 		return tmpl, nil
 	}
 
-	tmplBytes, err := json.Marshal(tmpl)
+	b, err := json.Marshal(tmpl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal Kustomization for template rendering: %w", err)
+	}
+
+	rendered, err := render(b, params)
 	if err != nil {
 		return nil, err
 	}
 
-	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
-	replacedTmplStr, err := replace(fstTmpl, params, true)
+	var updated kustomizev1.Kustomization
+	err = json.Unmarshal(rendered, &updated)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse rendered Kustomization template: %w", err)
 	}
 
-	var replacedTmpl kustomizev1.Kustomization
-	err = json.Unmarshal([]byte(replacedTmplStr), &replacedTmpl)
-	if err != nil {
-		return nil, err
-	}
-	return &replacedTmpl, nil
+	return &updated, nil
 }
 
-// Replace executes basic string substitution of a template with replacement values.
-// 'allowUnresolved' indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template.
-func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
-	var unresolvedErr error
-	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		trimmedTag := strings.TrimSpace(tag)
-		replacement, ok := replaceMap[trimmedTag]
-		if len(trimmedTag) == 0 || !ok {
-			if allowUnresolved {
-				// just write the same string back
-				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
-			}
-			unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
-			return 0, nil
-		}
-		// The following escapes any special characters (e.g. newlines, tabs, etc...)
-		// in preparation for substitution
-		replacement = strconv.Quote(replacement)
-		replacement = replacement[1 : len(replacement)-1]
-		return w.Write([]byte(replacement))
-	})
-	if unresolvedErr != nil {
-		return "", unresolvedErr
+func render(b []byte, params map[string]string) ([]byte, error) {
+	t, err := template.New("kustomization").Funcs(funcMap).Parse(string(b))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
 
-	return replacedTmpl, nil
+	var out bytes.Buffer
+	if err := t.Execute(&out, params); err != nil {
+		return nil, fmt.Errorf("failed to render template: %w", err)
+	}
+
+	return out.Bytes(), nil
 }

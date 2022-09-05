@@ -48,7 +48,7 @@ func TestGenerateKustomizations(t *testing.T) {
 			tp: &sourcev1.KustomizationSetTemplate{
 				KustomizationSetTemplateMeta: sourcev1.KustomizationSetTemplateMeta{
 					Labels: map[string]string{
-						"cluster.app/name": "{{ cluster }}",
+						"cluster.app/name": "{{ .cluster }}",
 					},
 				},
 			},
@@ -95,11 +95,11 @@ func makeTestKustomizationSet(opts ...func(*sourcev1.KustomizationSet)) *sourcev
 		Spec: sourcev1.KustomizationSetSpec{
 			Template: sourcev1.KustomizationSetTemplate{
 				KustomizationSetTemplateMeta: sourcev1.KustomizationSetTemplateMeta{
-					Name: `{{cluster}}-demo`,
+					Name: `{{.cluster}}-demo`,
 				},
 				Spec: kustomizev1.KustomizationSpec{
 					Interval: metav1.Duration{Duration: 5 * time.Minute},
-					Path:     "./clusters/{{cluster}}/",
+					Path:     "./clusters/{{.cluster}}/",
 					Prune:    true,
 					SourceRef: kustomizev1.CrossNamespaceSourceReference{
 						Kind: "GitRepository",
@@ -107,7 +107,7 @@ func makeTestKustomizationSet(opts ...func(*sourcev1.KustomizationSet)) *sourcev
 					},
 					KubeConfig: &kustomizev1.KubeConfig{
 						SecretRef: meta.SecretKeyReference{
-							Name: "{{cluster}}",
+							Name: "{{.cluster}}",
 						},
 					},
 				},

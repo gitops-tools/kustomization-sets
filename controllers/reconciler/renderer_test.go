@@ -11,7 +11,7 @@ import (
 )
 
 func TestRenderTemplate(t *testing.T) {
-	makeKustomization := func(opts ...func(*kustomizev1.Kustomization)) *kustomizev1.Kustomization {
+	newKustomization := func(opts ...func(*kustomizev1.Kustomization)) *kustomizev1.Kustomization {
 		k := &kustomizev1.Kustomization{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "testing",
@@ -44,12 +44,18 @@ func TestRenderTemplate(t *testing.T) {
 		params map[string]string
 		want   *kustomizev1.Kustomization
 	}{
-		{name: "no params", tmpl: makeKustomization(), want: makeKustomization()},
+		{name: "no params", tmpl: newKustomization(), want: newKustomization()},
 		{
 			name:   "simple params",
-			tmpl:   makeKustomization(templatePath("{{replaced}}")),
+			tmpl:   newKustomization(templatePath("{{.replaced}}")),
 			params: map[string]string{"replaced": "new string"},
-			want:   makeKustomization(templatePath("new string")),
+			want:   newKustomization(templatePath("new string")),
+		},
+		{
+			name:   "sanitize",
+			tmpl:   newKustomization(templatePath("{{ sanitize .replaced }}")),
+			params: map[string]string{"replaced": "new string"},
+			want:   newKustomization(templatePath("newstring")),
 		},
 	}
 

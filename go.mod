@@ -1,17 +1,17 @@
 module github.com/gitops-tools/kustomize-set-controller
 
-go 1.18
+go 1.19
 
 require (
 	github.com/fluxcd/kustomize-controller/api v0.26.3
 	github.com/fluxcd/pkg/apis/meta v0.14.2
 	github.com/fluxcd/pkg/runtime v0.16.2
+	github.com/gitops-tools/pkg v0.0.0-20220826071912-97f410fa684d
 	github.com/go-logr/logr v1.2.3
 	github.com/google/go-cmp v0.5.8
 	github.com/imdario/mergo v0.3.13
 	github.com/jenkins-x/go-scm v1.11.18
 	github.com/onsi/gomega v1.19.0
-	github.com/valyala/fasttemplate v1.2.1
 	k8s.io/api v0.24.3
 	k8s.io/apiextensions-apiserver v0.24.3
 	k8s.io/apimachinery v0.24.3
@@ -70,7 +70,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.0 // indirect
-	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
