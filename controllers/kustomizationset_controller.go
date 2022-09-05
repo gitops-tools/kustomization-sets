@@ -54,21 +54,34 @@ func (r *KustomizationSetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("kustomization set loaded", "name", kustomizationSet.GetName())
 
-	kustomizations, err := reconciler.GenerateKustomizations(ctx, &kustomizationSet, r.Generators)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	for _, kustomization := range kustomizations {
-		if err := controllerutil.SetOwnerReference(&kustomizationSet, &kustomization, r.Client.Scheme()); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to set owner for Kustomization: %w", err)
+	if kustomizationSet.ObjectMeta.DeletionTimestamp.IsZero() {
+		if err := r.reconcileResources(ctx, &kustomizationSet); err != nil {
+			return ctrl.Result{}, err
 		}
-		if err := r.Client.Create(ctx, &kustomization); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to create Kustomization: %w", err)
-		}
+		// TODO: This needs to calculate the requeue after time!
+		return ctrl.Result{}, nil
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kustomizationSet *sourcev1alpha1.KustomizationSet) error {
+	kustomizations, err := reconciler.GenerateKustomizations(ctx, kustomizationSet, r.Generators)
+	if err != nil {
+		return err
+	}
+	// TODO: This should check for existing resources and update rather than
+	// create.
+	for _, kustomization := range kustomizations {
+		if err := controllerutil.SetOwnerReference(kustomizationSet, &kustomization, r.Client.Scheme()); err != nil {
+			return fmt.Errorf("failed to set owner for Kustomization: %w", err)
+		}
+		if err := r.Client.Create(ctx, &kustomization); err != nil {
+			return fmt.Errorf("failed to create Kustomization: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

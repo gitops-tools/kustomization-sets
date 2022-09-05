@@ -71,7 +71,7 @@ func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
 	g := NewWithT(t)
 	ctx := context.TODO()
 
-	obj := &sourcev1alpha1.KustomizationSet{
+	ks := &sourcev1alpha1.KustomizationSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "demo-set",
 			Namespace: "default",
@@ -110,22 +110,87 @@ func TestKustomizationSetReconciler_Reconcile(t *testing.T) {
 			},
 		},
 	}
-	g.Expect(testEnv.Create(ctx, obj)).To(Succeed())
-	key := client.ObjectKey{Name: obj.Name, Namespace: obj.Namespace}
+	g.Expect(testEnv.Create(ctx, ks)).To(Succeed())
+	key := client.ObjectKey{Name: ks.Name, Namespace: ks.Namespace}
 
 	var kustomizationList kustomizev1.KustomizationList
 	g.Eventually(func() int {
-		if err := testEnv.List(ctx, &kustomizationList, client.InNamespace(obj.Namespace)); err != nil {
+		if err := testEnv.List(ctx, &kustomizationList, client.InNamespace(ks.Namespace)); err != nil {
 			return 0
 		}
 		return len(kustomizationList.Items)
 	}, timeout).Should(Equal(3))
 
-	g.Expect(testEnv.Delete(ctx, obj)).To(Succeed())
+	g.Expect(testEnv.Delete(ctx, ks)).To(Succeed())
 
 	// Wait for GitRepository to be deleted
 	g.Eventually(func() bool {
-		if err := testEnv.Get(ctx, key, obj); err != nil {
+		if err := testEnv.Get(ctx, key, ks); err != nil {
+			return apierrors.IsNotFound(err)
+		}
+		return false
+	}, timeout).Should(BeTrue())
+}
+
+func TestKustomizationSetReconciler_Reconcile_deleted_resources(t *testing.T) {
+	g := NewWithT(t)
+	ctx := context.TODO()
+
+	ks := &sourcev1alpha1.KustomizationSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "demo-set",
+			Namespace: "default",
+		},
+		Spec: sourcev1alpha1.KustomizationSetSpec{
+			Generators: []sourcev1alpha1.KustomizationSetGenerator{
+				{
+					List: &sourcev1alpha1.ListGenerator{
+						Elements: []apiextensionsv1.JSON{
+							{Raw: []byte(`{"cluster": "engineering-dev"}`)},
+							{Raw: []byte(`{"cluster": "engineering-prod"}`)},
+							{Raw: []byte(`{"cluster": "engineering-preprod"}`)},
+						},
+					},
+				},
+			},
+			Template: sourcev1alpha1.KustomizationSetTemplate{
+				KustomizationSetTemplateMeta: sourcev1alpha1.KustomizationSetTemplateMeta{
+					Name:      `{{.cluster}}-demo`,
+					Namespace: "default",
+				},
+				Spec: kustomizev1.KustomizationSpec{
+					Interval: metav1.Duration{Duration: 5 * time.Minute},
+					Path:     "./clusters/{{.cluster}}/",
+					Prune:    true,
+					SourceRef: kustomizev1.CrossNamespaceSourceReference{
+						Kind: "GitRepository",
+						Name: "demo-repo",
+					},
+					KubeConfig: &kustomizev1.KubeConfig{
+						SecretRef: meta.SecretKeyReference{
+							Name: "{{.cluster}}",
+						},
+					},
+				},
+			},
+		},
+	}
+	g.Expect(testEnv.Create(ctx, ks)).To(Succeed())
+	key := client.ObjectKey{Name: ks.Name, Namespace: ks.Namespace}
+
+	var kustomizationList kustomizev1.KustomizationList
+	g.Eventually(func() int {
+		if err := testEnv.List(ctx, &kustomizationList, client.InNamespace(ks.Namespace)); err != nil {
+			return 0
+		}
+		return len(kustomizationList.Items)
+	}, timeout).Should(Equal(3))
+
+	g.Expect(testEnv.Delete(ctx, ks)).To(Succeed())
+
+	// Wait for GitRepository to be deleted
+	g.Eventually(func() bool {
+		if err := testEnv.Get(ctx, key, ks); err != nil {
 			return apierrors.IsNotFound(err)
 		}
 		return false
