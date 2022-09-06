@@ -23,6 +23,10 @@ import (
 
 const (
 	maxConditionMessageLength = 20000
+
+	// HealthyCondition indicates that the KustomizationSet has created all its
+	// resources.
+	HealthyCondition string = "Healthy"
 )
 
 // KustomizationSetReady registers a successful apply attempt of the given Kustomization.
