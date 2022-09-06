@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/cli-utils/pkg/object"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -54,34 +55,50 @@ func (r *KustomizationSetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	logger.Info("kustomization set loaded", "name", kustomizationSet.GetName())
 
-	if kustomizationSet.ObjectMeta.DeletionTimestamp.IsZero() {
-		if err := r.reconcileResources(ctx, &kustomizationSet); err != nil {
+	if !kustomizationSet.ObjectMeta.DeletionTimestamp.IsZero() {
+		return ctrl.Result{}, nil
+	}
+
+	inventory, err := r.reconcileResources(ctx, &kustomizationSet)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if inventory != nil {
+		kustomizationSet.Status.Inventory = inventory
+		if err := r.Status().Update(ctx, &kustomizationSet); err != nil {
 			return ctrl.Result{}, err
 		}
-		// TODO: This needs to calculate the requeue after time!
-		return ctrl.Result{}, nil
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kustomizationSet *sourcev1alpha1.KustomizationSet) error {
+func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kustomizationSet *sourcev1alpha1.KustomizationSet) (*sourcev1alpha1.ResourceInventory, error) {
 	kustomizations, err := reconciler.GenerateKustomizations(ctx, kustomizationSet, r.Generators)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	entries := []sourcev1alpha1.ResourceRef{}
 	// TODO: This should check for existing resources and update rather than
 	// create.
 	for _, kustomization := range kustomizations {
 		if err := controllerutil.SetOwnerReference(kustomizationSet, &kustomization, r.Client.Scheme()); err != nil {
-			return fmt.Errorf("failed to set owner for Kustomization: %w", err)
+			return nil, fmt.Errorf("failed to set owner for Kustomization: %w", err)
 		}
 		if err := r.Client.Create(ctx, &kustomization); err != nil {
-			return fmt.Errorf("failed to create Kustomization: %w", err)
+			return nil, fmt.Errorf("failed to create Kustomization: %w", err)
 		}
+		objMeta, err := object.RuntimeToObjMeta(&kustomization)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update inventory: %w", err)
+		}
+		entries = append(entries, sourcev1alpha1.ResourceRef{
+			ID:      objMeta.String(),
+			Version: kustomization.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+		})
 	}
 
-	return nil
+	return &sourcev1alpha1.ResourceInventory{Entries: entries}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

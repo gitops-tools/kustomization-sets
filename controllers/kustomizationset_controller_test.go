@@ -23,7 +23,9 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/cli-utils/pkg/object"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -32,6 +34,7 @@ import (
 	"github.com/fluxcd/pkg/apis/meta"
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestReconciliation(t *testing.T) {
@@ -91,15 +94,50 @@ func TestReconciliation(t *testing.T) {
 		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(kz), updated); err != nil {
 			t.Fatal(err)
 		}
-		if l := len(updated.Status.Inventory.Entries); l != 3 {
-			t.Fatalf("expected 3 items, got %v", l)
+
+		want := []runtime.Object{
+			newKustomization("engineering-dev-demo", "default"),
+			newKustomization("engineering-prod-demo", "default"),
+			newKustomization("engineering-preprod-demo", "default"),
 		}
+		assertInventoryHasItems(t, updated, want...)
 	})
+}
+
+func assertInventoryHasItems(t *testing.T, ks *sourcev1alpha1.KustomizationSet, objs ...runtime.Object) {
+	t.Helper()
+	if l := len(ks.Status.Inventory.Entries); l != 3 {
+		t.Fatalf("expected 3 items, got %v", l)
+	}
+	entries := []sourcev1alpha1.ResourceRef{}
+	for _, obj := range objs {
+		objMeta, err := object.RuntimeToObjMeta(obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+		entries = append(entries, sourcev1alpha1.ResourceRef{
+			ID:      objMeta.String(),
+			Version: obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+		})
+	}
+	want := &sourcev1alpha1.ResourceInventory{Entries: entries}
+	if diff := cmp.Diff(want, ks.Status.Inventory); diff != "" {
+		t.Fatalf("failed to get inventory:\n%s", diff)
+	}
 }
 
 func cleanupResource(t *testing.T, cl client.Client, obj client.Object) {
 	if err := cl.Delete(context.TODO(), obj); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func newKustomization(name, namespace string) *kustomizev1.Kustomization {
+	return &kustomizev1.Kustomization{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
 	}
 }
 
