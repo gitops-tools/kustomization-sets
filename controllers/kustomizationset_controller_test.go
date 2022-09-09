@@ -18,10 +18,12 @@ package controllers
 import (
 	"context"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -84,6 +86,7 @@ func TestReconciliation(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer cleanupResource(t, k8sClient, kz)
+		defer deleteAllKustomizations(t, k8sClient)
 
 		_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(kz)})
 		if err != nil {
@@ -102,12 +105,87 @@ func TestReconciliation(t *testing.T) {
 		}
 		assertInventoryHasItems(t, updated, want...)
 	})
+
+	t.Run("reconciling removal of resources", func(t *testing.T) {
+		ctx := context.TODO()
+		devKS := newKustomization("engineering-dev-demo", "default")
+		kz := newKustomizationSet(func(ks *sourcev1alpha1.KustomizationSet) {
+			ks.Spec.Generators = []sourcev1alpha1.KustomizationSetGenerator{
+				{
+					List: &sourcev1alpha1.ListGenerator{
+						Elements: []apiextensionsv1.JSON{
+							{Raw: []byte(`{"cluster": "engineering-prod"}`)},
+							{Raw: []byte(`{"cluster": "engineering-preprod"}`)},
+						},
+					},
+				},
+			}
+		})
+		// TODO: create and cleanup
+		if err := k8sClient.Create(ctx, kz); err != nil {
+			t.Fatal(err)
+		}
+		defer cleanupResource(t, k8sClient, kz)
+		if err := k8sClient.Create(ctx, devKS); err != nil {
+			t.Fatal(err)
+		}
+		defer deleteAllKustomizations(t, k8sClient)
+
+		objMeta, err := object.RuntimeToObjMeta(devKS)
+		if err != nil {
+			t.Fatal(err)
+		}
+		kz.Status.Inventory = &sourcev1alpha1.ResourceInventory{
+			Entries: []sourcev1alpha1.ResourceRef{
+				{
+					ID:      objMeta.String(),
+					Version: devKS.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+				},
+			},
+		}
+		if err := k8sClient.Status().Update(ctx, kz); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(kz)})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		updated := &sourcev1alpha1.KustomizationSet{}
+		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(kz), updated); err != nil {
+			t.Fatal(err)
+		}
+
+		want := []runtime.Object{
+			newKustomization("engineering-prod-demo", "default"),
+			newKustomization("engineering-preprod-demo", "default"),
+		}
+		assertInventoryHasItems(t, updated, want...)
+		assertResourceDoesNotExist(t, k8sClient, devKS)
+	})
+}
+
+func deleteAllKustomizations(t *testing.T, cl client.Client) {
+	t.Helper()
+	err := cl.DeleteAllOf(context.TODO(), &kustomizev1.Kustomization{}, client.InNamespace("default"))
+	if client.IgnoreNotFound(err) != nil {
+		t.Fatal(err)
+	}
+}
+
+func assertResourceDoesNotExist(t *testing.T, cl client.Client, ks *kustomizev1.Kustomization) {
+	t.Helper()
+	check := &kustomizev1.Kustomization{}
+	if err := cl.Get(context.TODO(), client.ObjectKeyFromObject(ks), check); !apierrors.IsNotFound(err) {
+		t.Fatalf("object %v still exists", ks)
+	}
 }
 
 func assertInventoryHasItems(t *testing.T, ks *sourcev1alpha1.KustomizationSet, objs ...runtime.Object) {
 	t.Helper()
-	if l := len(ks.Status.Inventory.Entries); l != 3 {
-		t.Fatalf("expected 3 items, got %v", l)
+	if l := len(ks.Status.Inventory.Entries); l != len(objs) {
+		t.Fatalf("expected %d items, got %v", len(objs), l)
 	}
 	entries := []sourcev1alpha1.ResourceRef{}
 	for _, obj := range objs {
@@ -120,6 +198,9 @@ func assertInventoryHasItems(t *testing.T, ks *sourcev1alpha1.KustomizationSet, 
 			Version: obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
 		})
 	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].ID < entries[j].ID
+	})
 	want := &sourcev1alpha1.ResourceInventory{Entries: entries}
 	if diff := cmp.Diff(want, ks.Status.Inventory); diff != "" {
 		t.Fatalf("failed to get inventory:\n%s", diff)
@@ -138,11 +219,20 @@ func newKustomization(name, namespace string) *kustomizev1.Kustomization {
 			Name:      name,
 			Namespace: namespace,
 		},
+		Spec: kustomizev1.KustomizationSpec{
+			Interval: metav1.Duration{Duration: 5 * time.Minute},
+			Path:     "./examples/kustomize/environments/dev",
+			Prune:    true,
+			SourceRef: kustomizev1.CrossNamespaceSourceReference{
+				Kind: "GitRepository",
+				Name: "demo-repo",
+			},
+		},
 	}
 }
 
-func newKustomizationSet() *sourcev1alpha1.KustomizationSet {
-	return &sourcev1alpha1.KustomizationSet{
+func newKustomizationSet(opts ...func(*sourcev1alpha1.KustomizationSet)) *sourcev1alpha1.KustomizationSet {
+	ks := &sourcev1alpha1.KustomizationSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "demo-set",
 			Namespace: "default",
@@ -181,4 +271,8 @@ func newKustomizationSet() *sourcev1alpha1.KustomizationSet {
 			},
 		},
 	}
+	for _, o := range opts {
+		o(ks)
+	}
+	return ks
 }

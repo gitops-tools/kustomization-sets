@@ -30,6 +30,7 @@ import (
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/pkg/sets"
 )
 
 // KustomizationSetReconciler reconciles a KustomizationSet object
@@ -78,7 +79,7 @@ func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kus
 	if err != nil {
 		return nil, err
 	}
-	entries := []sourcev1alpha1.ResourceRef{}
+	entries := sets.New[sourcev1alpha1.ResourceRef]()
 	// TODO: This should check for existing resources and update rather than
 	// create.
 	for _, kustomization := range kustomizations {
@@ -92,13 +93,21 @@ func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kus
 		if err != nil {
 			return nil, fmt.Errorf("failed to update inventory: %w", err)
 		}
-		entries = append(entries, sourcev1alpha1.ResourceRef{
+		entries.Insert(sourcev1alpha1.ResourceRef{
 			ID:      objMeta.String(),
 			Version: kustomization.GetObjectKind().GroupVersionKind().GroupVersion().String(),
 		})
 	}
 
-	return &sourcev1alpha1.ResourceInventory{Entries: entries}, nil
+	// TODO: This is the point to delete and remove existing resources.
+	// if kustomizationSet.Status.Inventory != nil {
+	// 	previouslyGenerated := sets.New(kustomizationSet.Status.Inventory.Entries...)
+	// 	kustomizationsToRemove := previouslyGenerated.Difference(entries)
+	// }
+
+	return &sourcev1alpha1.ResourceInventory{Entries: entries.SortedList(func(x, y sourcev1alpha1.ResourceRef) bool {
+		return x.ID < y.ID
+	})}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
