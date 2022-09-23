@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cli-utils/pkg/object"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -100,10 +102,26 @@ func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kus
 	}
 
 	// TODO: This is the point to delete and remove existing resources.
-	// if kustomizationSet.Status.Inventory != nil {
-	// 	previouslyGenerated := sets.New(kustomizationSet.Status.Inventory.Entries...)
-	// 	kustomizationsToRemove := previouslyGenerated.Difference(entries)
-	// }
+	if kustomizationSet.Status.Inventory != nil {
+		previouslyGenerated := sets.New(kustomizationSet.Status.Inventory.Entries...)
+		kustomizationsToRemove := previouslyGenerated.Difference(entries)
+
+		for _, v := range kustomizationsToRemove.List() {
+			objMeta, err := object.ParseObjMetadata(v.ID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse object ID %s for deletion: %w", v.ID, err)
+			}
+			k := kustomizev1.Kustomization{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      objMeta.Name,
+					Namespace: objMeta.Namespace,
+				},
+			}
+			if err := r.Client.Delete(ctx, &k); err != nil {
+				return nil, fmt.Errorf("failed to delete %v: %w", k, err)
+			}
+		}
+	}
 
 	return &sourcev1alpha1.ResourceInventory{Entries: entries.SortedList(func(x, y sourcev1alpha1.ResourceRef) bool {
 		return x.ID < y.ID

@@ -11,13 +11,13 @@ spec:
       repo: bigkevmcd/go-demo
   template:
     metadata:
-      name: "{{branch}}-demo"
+      name: "{{.branch}}-demo"
       namespace: default
     spec:
       interval: 5m
       path: "./examples/kustomize/environments/dev"
       prune: true
-      targetNamespace: "{{branch}}"
+      targetNamespace: "{{.branch}}"
       sourceRef:
         kind: GitRepository
         name: go-demo-repo

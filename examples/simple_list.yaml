@@ -11,15 +11,15 @@ spec:
       - cluster: engineering-preprod
   template:
     metadata:
-      name: '{{cluster}}-demo'
+      name: '{{.cluster}}-demo'
       namespace: default
     spec:
       interval: 5m
-      path: "./clusters/{{cluster}}/"
+      path: "./clusters/{{.cluster}}/"
       prune: true
       sourceRef:
         kind: GitRepository
         name: demo-repo
       kubeConfig:
         secretRef:
-          name: "{{cluster}}-kubeconfig"
+          name: "{{.cluster}}-kubeconfig"
