@@ -164,6 +164,57 @@ func TestReconciliation(t *testing.T) {
 		assertInventoryHasItems(t, updated, want...)
 		assertResourceDoesNotExist(t, k8sClient, devKS)
 	})
+
+	t.Run("reconciling update of resources", func(t *testing.T) {
+		ctx := context.TODO()
+		devKS := newKustomization("engineering-dev-demo", "default")
+		kz := newKustomizationSet(func(ks *sourcev1alpha1.KustomizationSet) {
+			ks.Spec.Generators = []sourcev1alpha1.KustomizationSetGenerator{
+				{
+					List: &sourcev1alpha1.ListGenerator{
+						Elements: []apiextensionsv1.JSON{
+							{Raw: []byte(`{"cluster": "engineering-dev"}`)},
+						},
+					},
+				},
+			}
+		})
+		// TODO: create and cleanup
+		if err := k8sClient.Create(ctx, kz); err != nil {
+			t.Fatal(err)
+		}
+		defer cleanupResource(t, k8sClient, kz)
+		if err := k8sClient.Create(ctx, devKS); err != nil {
+			t.Fatal(err)
+		}
+		defer deleteAllKustomizations(t, k8sClient)
+
+		objMeta, err := object.RuntimeToObjMeta(devKS)
+		if err != nil {
+			t.Fatal(err)
+		}
+		kz.Status.Inventory = &sourcev1alpha1.ResourceInventory{
+			Entries: []sourcev1alpha1.ResourceRef{
+				{
+					ID:      objMeta.String(),
+					Version: devKS.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+				},
+			},
+		}
+		if err := k8sClient.Status().Update(ctx, kz); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(kz)})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		updated := &sourcev1alpha1.KustomizationSet{}
+		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(kz), updated); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func deleteAllKustomizations(t *testing.T, cl client.Client) {

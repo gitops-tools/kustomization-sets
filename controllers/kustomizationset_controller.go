@@ -21,12 +21,13 @@ import (
 	"fmt"
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
+	"github.com/fluxcd/pkg/runtime/patch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cli-utils/pkg/object"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
@@ -81,51 +82,78 @@ func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kus
 	if err != nil {
 		return nil, err
 	}
+	existingEntries := sets.New[sourcev1alpha1.ResourceRef]()
+	if kustomizationSet.Status.Inventory != nil {
+		existingEntries.Insert(kustomizationSet.Status.Inventory.Entries...)
+	}
+
 	entries := sets.New[sourcev1alpha1.ResourceRef]()
-	// TODO: This should check for existing resources and update rather than
-	// create.
 	for _, kustomization := range kustomizations {
-		if err := controllerutil.SetOwnerReference(kustomizationSet, &kustomization, r.Client.Scheme()); err != nil {
-			return nil, fmt.Errorf("failed to set owner for Kustomization: %w", err)
-		}
-		if err := r.Client.Create(ctx, &kustomization); err != nil {
-			return nil, fmt.Errorf("failed to create Kustomization: %w", err)
-		}
 		objMeta, err := object.RuntimeToObjMeta(&kustomization)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update inventory: %w", err)
 		}
-		entries.Insert(sourcev1alpha1.ResourceRef{
+		ref := sourcev1alpha1.ResourceRef{
 			ID:      objMeta.String(),
 			Version: kustomization.GetObjectKind().GroupVersionKind().GroupVersion().String(),
-		})
+		}
+		entries.Insert(ref)
+
+		if existingEntries.Has(ref) {
+			existing := &kustomizev1.Kustomization{}
+			if err := r.Client.Get(ctx, types.NamespacedName{Name: kustomization.Name, Namespace: kustomization.Namespace}, existing); err != nil {
+				return nil, fmt.Errorf("failed to load existing Kustomization: %w", err)
+			}
+			patchHelper, err := patch.NewHelper(existing, r.Client)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create patch helper for Kustomization: %w", err)
+			}
+			existing.Spec = kustomization.Spec
+			if err := patchHelper.Patch(ctx, existing); err != nil {
+				return nil, fmt.Errorf("failed to update Kustomization: %w", err)
+			}
+			continue
+		}
+
+		if err := r.Client.Create(ctx, &kustomization); err != nil {
+			return nil, fmt.Errorf("failed to create Kustomization: %w", err)
+		}
 	}
 
-	// TODO: This is the point to delete and remove existing resources.
-	if kustomizationSet.Status.Inventory != nil {
-		previouslyGenerated := sets.New(kustomizationSet.Status.Inventory.Entries...)
-		kustomizationsToRemove := previouslyGenerated.Difference(entries)
+	if kustomizationSet.Status.Inventory == nil {
+		return &sourcev1alpha1.ResourceInventory{Entries: entries.SortedList(func(x, y sourcev1alpha1.ResourceRef) bool {
+			return x.ID < y.ID
+		})}, nil
 
-		for _, v := range kustomizationsToRemove.List() {
-			objMeta, err := object.ParseObjMetadata(v.ID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse object ID %s for deletion: %w", v.ID, err)
-			}
-			k := kustomizev1.Kustomization{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      objMeta.Name,
-					Namespace: objMeta.Namespace,
-				},
-			}
-			if err := r.Client.Delete(ctx, &k); err != nil {
-				return nil, fmt.Errorf("failed to delete %v: %w", k, err)
-			}
-		}
+	}
+	kustomizationsToRemove := existingEntries.Difference(entries)
+	if err := r.removeResourceRefs(ctx, kustomizationsToRemove.List()); err != nil {
+		return nil, err
 	}
 
 	return &sourcev1alpha1.ResourceInventory{Entries: entries.SortedList(func(x, y sourcev1alpha1.ResourceRef) bool {
 		return x.ID < y.ID
 	})}, nil
+
+}
+
+func (r *KustomizationSetReconciler) removeResourceRefs(ctx context.Context, deletions []sourcev1alpha1.ResourceRef) error {
+	for _, v := range deletions {
+		objMeta, err := object.ParseObjMetadata(v.ID)
+		if err != nil {
+			return fmt.Errorf("failed to parse object ID %s for deletion: %w", v.ID, err)
+		}
+		k := kustomizev1.Kustomization{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      objMeta.Name,
+				Namespace: objMeta.Namespace,
+			},
+		}
+		if err := r.Client.Delete(ctx, &k); err != nil {
+			return fmt.Errorf("failed to delete %v: %w", k, err)
+		}
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

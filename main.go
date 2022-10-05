@@ -87,10 +87,6 @@ func main() {
 		Scheme: mgr.GetScheme(),
 		Generators: map[string]generators.Generator{
 			"List": generators.NewListGenerator(),
-			"PullRequest": generators.NewPullRequestGenerator(
-				zapLog,
-				mgr.GetClient(),
-			),
 		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KustomizationSet")
