@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/cli-utils/pkg/object"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
@@ -114,6 +115,9 @@ func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kus
 			}
 			continue
 		}
+
+		kustomization.Namespace = kustomizationSet.Namespace
+		controllerutil.SetControllerReference(kustomizationSet, &kustomization, r.Scheme)
 
 		if err := r.Client.Create(ctx, &kustomization); err != nil {
 			return nil, fmt.Errorf("failed to create Kustomization: %w", err)

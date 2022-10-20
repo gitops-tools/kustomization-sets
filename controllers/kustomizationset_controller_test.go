@@ -70,6 +70,7 @@ func TestReconciliation(t *testing.T) {
 	}
 	reconciler := &KustomizationSetReconciler{
 		Client: k8sClient,
+		Scheme: scheme.Scheme,
 		Generators: map[string]generators.Generator{
 			"List": generators.NewListGenerator(),
 		},
@@ -104,6 +105,7 @@ func TestReconciliation(t *testing.T) {
 			newKustomization("engineering-preprod-demo", "default"),
 		}
 		assertInventoryHasItems(t, updated, want...)
+		assertKustomizationsExist(t, k8sClient, "default", "engineering-dev-demo", "engineering-prod-demo", "engineering-preprod-demo")
 	})
 
 	t.Run("reconciling removal of resources", func(t *testing.T) {
@@ -230,6 +232,27 @@ func assertResourceDoesNotExist(t *testing.T, cl client.Client, ks *kustomizev1.
 	check := &kustomizev1.Kustomization{}
 	if err := cl.Get(context.TODO(), client.ObjectKeyFromObject(ks), check); !apierrors.IsNotFound(err) {
 		t.Fatalf("object %v still exists", ks)
+	}
+}
+
+func assertKustomizationsExist(t *testing.T, cl client.Client, ns string, want ...string) {
+	t.Helper()
+	kss := &kustomizev1.KustomizationList{}
+	if err := cl.List(context.TODO(), kss, client.InNamespace(ns)); err != nil {
+		t.Fatalf("failed to list kustomizations in ns %s: %s", ns, err)
+	}
+	existingNames := func(l []kustomizev1.Kustomization) []string {
+		names := []string{}
+		for _, v := range l {
+			names = append(names, v.GetName())
+		}
+		sort.Strings(names)
+		return names
+	}(kss.Items)
+
+	sort.Strings(want)
+	if diff := cmp.Diff(want, existingNames); diff != "" {
+		t.Fatalf("got different names:\n%s", diff)
 	}
 }
 
