@@ -16,7 +16,6 @@ spec:
   template:
     metadata:
       name: "{{ .env }}-demo"
-      namespace: "namespace-{{ .team }}"
       labels:
         app.kubernetes.io/name: go-demo
         app.kubernetes.io/instance: "{{ .env }}"
