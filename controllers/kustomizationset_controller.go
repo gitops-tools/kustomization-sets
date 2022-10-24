@@ -58,7 +58,7 @@ func (r *KustomizationSetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	logger.Info("kustomization set loaded", "name", kustomizationSet.GetName())
+	logger.Info("kustomization set loaded")
 
 	if !kustomizationSet.ObjectMeta.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
@@ -83,6 +83,7 @@ func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kus
 	if err != nil {
 		return nil, err
 	}
+
 	existingEntries := sets.New[sourcev1alpha1.ResourceRef]()
 	if kustomizationSet.Status.Inventory != nil {
 		existingEntries.Insert(kustomizationSet.Status.Inventory.Entries...)
@@ -116,7 +117,6 @@ func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kus
 			continue
 		}
 
-		kustomization.Namespace = kustomizationSet.Namespace
 		controllerutil.SetControllerReference(kustomizationSet, &kustomization, r.Scheme)
 
 		if err := r.Client.Create(ctx, &kustomization); err != nil {

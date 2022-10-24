@@ -14,8 +14,8 @@ import (
 // Kustomization using the configured generators and templates.
 func GenerateKustomizations(ctx context.Context, r *sourcev1.KustomizationSet, configuredGenerators map[string]generators.Generator) ([]kustomizev1.Kustomization, error) {
 	var res []kustomizev1.Kustomization
-	for _, g := range r.Spec.Generators {
-		t, err := transform(ctx, g, configuredGenerators, r.Spec.Template, r)
+	for _, gen := range r.Spec.Generators {
+		t, err := transform(ctx, gen, configuredGenerators, r.Spec.Template, r)
 		if err != nil {
 			return nil, fmt.Errorf("failed to transform template for set %s: %w", r.GetName(), err)
 		}
@@ -26,10 +26,12 @@ func GenerateKustomizations(ctx context.Context, r *sourcev1.KustomizationSet, c
 				if err != nil {
 					return nil, fmt.Errorf("failed to render template params for set %s: %w", r.GetName(), err)
 				}
+				app.SetNamespace(r.GetNamespace())
 				res = append(res, *app)
 			}
 		}
 	}
+
 	return res, nil
 }
 
@@ -38,7 +40,6 @@ func makeKustomization(template sourcev1.KustomizationSetTemplate) *kustomizev1.
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: template.Annotations,
 			Labels:      template.Labels,
-			Namespace:   template.Namespace,
 			Name:        template.Name,
 			Finalizers:  template.Finalizers,
 		},
