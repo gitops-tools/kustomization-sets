@@ -19,6 +19,7 @@ func GenerateKustomizations(ctx context.Context, r *sourcev1.KustomizationSet, c
 		if err != nil {
 			return nil, fmt.Errorf("failed to transform template for set %s: %w", r.GetName(), err)
 		}
+
 		for _, a := range t {
 			tmplKustomization := makeKustomization(a.Template)
 			for _, p := range a.Params {

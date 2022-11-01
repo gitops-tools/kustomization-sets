@@ -6,6 +6,7 @@ import (
 	"time"
 
 	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Generator defines the interface implemented by all KustomizationSet generators.
@@ -25,6 +26,13 @@ type Generator interface {
 	// Template returns the inline template from the spec if there is any, or
 	// an empty object otherwise
 	Template(*sourcev1.KustomizationSetGenerator) *sourcev1.KustomizationSetTemplate
+
+	// AdditionalResources returns a set of additional templatable resources
+	// that this generator needs to have created to be used with the
+	// Kustomization.
+	//
+	// Generators can return nil to indicate no additional resources.
+	AdditionalResources(*sourcev1.KustomizationSetGenerator) ([]runtime.Object, error)
 }
 
 // EmptyKustomizationSetGeneratorError is returned when KustomizationSet is

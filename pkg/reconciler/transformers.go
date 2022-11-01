@@ -33,6 +33,7 @@ func transform(ctx context.Context, generator sourcev1.KustomizationSetGenerator
 			Template: mergedTemplate,
 		})
 	}
+
 	return res, nil
 }
 

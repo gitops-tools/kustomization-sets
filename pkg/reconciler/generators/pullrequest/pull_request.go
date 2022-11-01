@@ -12,6 +12,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -34,6 +35,7 @@ func NewGenerator(l logr.Logger, c client.Client) *PullRequestGenerator {
 	}
 }
 
+// Generate queries the configured Git hosting service for open pull requests.
 func (g *PullRequestGenerator) Generate(ctx context.Context, sg *sourcev1.KustomizationSetGenerator, ks *sourcev1.KustomizationSet) ([]map[string]any, error) {
 	g.Logger.Info("generating params", "repo", sg.PullRequest.Repo)
 	if sg == nil {
@@ -98,6 +100,11 @@ func (g *PullRequestGenerator) Template(sg *sourcev1.KustomizationSetGenerator) 
 	return sg.PullRequest.Template
 }
 
+// AdditionalResources is an implementation of the Generator interface.
+func (g *PullRequestGenerator) AdditionalResources(*sourcev1.KustomizationSetGenerator) ([]runtime.Object, error) {
+	return nil, nil
+}
+
 // label filtering is only supported by GitLab (that I'm aware of)
 // The fetched PRs are filtered on labels across all providers, but providing
 // the labels optimises the load from GitLab.
@@ -107,6 +114,7 @@ func listOptionsFromConfig(c *sourcev1.PullRequestGenerator) *scm.PullRequestLis
 	return &scm.PullRequestListOptions{
 		Size:   20,
 		Labels: c.Labels,
+		Open:   true,
 	}
 }
 
