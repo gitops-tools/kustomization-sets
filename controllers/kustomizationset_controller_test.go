@@ -24,6 +24,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -105,7 +106,9 @@ func TestReconciliation(t *testing.T) {
 			newKustomization("engineering-preprod-demo", "default"),
 		}
 		assertInventoryHasItems(t, updated, want...)
+
 		assertKustomizationsExist(t, k8sClient, "default", "engineering-dev-demo", "engineering-prod-demo", "engineering-preprod-demo")
+		assertKustomizationCondition(t, updated, meta.ReadyCondition, "3 kustomizations created")
 	})
 
 	t.Run("reconciling removal of resources", func(t *testing.T) {
@@ -253,6 +256,16 @@ func assertKustomizationsExist(t *testing.T, cl client.Client, ns string, want .
 	sort.Strings(want)
 	if diff := cmp.Diff(want, existingNames); diff != "" {
 		t.Fatalf("got different names:\n%s", diff)
+	}
+}
+
+func assertKustomizationCondition(t *testing.T, ks *sourcev1alpha1.KustomizationSet, condType, msg string) {
+	cond := apimeta.FindStatusCondition(ks.Status.Conditions, condType)
+	if cond == nil {
+		t.Fatalf("failed to find matching status condition for type %s in %#v", condType, ks.Status.Conditions)
+	}
+	if cond.Message != msg {
+		t.Fatalf("got %s, want %s", cond.Message, msg)
 	}
 }
 

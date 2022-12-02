@@ -69,7 +69,7 @@ func (r *KustomizationSetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 	if inventory != nil {
-		kustomizationSet.Status.Inventory = inventory
+		kustomizationSet = sourcev1alpha1.KustomizationSetReady(kustomizationSet, inventory, sourcev1alpha1.HealthyCondition, fmt.Sprintf("%d kustomizations created", len(inventory.Entries)))
 		if err := r.Status().Update(ctx, &kustomizationSet); err != nil {
 			return ctrl.Result{}, err
 		}
