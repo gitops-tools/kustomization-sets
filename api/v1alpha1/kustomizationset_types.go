@@ -47,6 +47,26 @@ type ListGenerator struct {
 	Template *KustomizationSetTemplate `json:"template,omitempty"`
 }
 
+// GitDirectoryGeneratorItem defines a path to be parsed (or excluded from) for
+// files.
+type GitDirectoryGeneratorItem struct {
+	Path    string `json:"path"`
+	Exclude bool   `json:"exclude,omitempty"`
+}
+
+// GitRepositoryGenerator generates from files in a Flux GitRepository resource.
+type GitRepositoryGenerator struct {
+	// RepositoryRef is the name of a GitRepository resource to be generated from.
+	RepositoryRef string `json:"repositoryRef"`
+
+	// Directories is a set of rules for identifying directories to be parsed.
+	Directories []GitDirectoryGeneratorItem `json:"directories,omitempty"`
+
+	// Template is an optional template that can be merged with generated
+	// Kustomizations.
+	Template *KustomizationSetTemplate `json:"template,omitempty"`
+}
+
 // PullRequestGenerator defines a generator that queries a Git hosting service
 // for relevant PRs.
 type PullRequestGenerator struct {
@@ -82,8 +102,8 @@ type PullRequestGenerator struct {
 
 // KustomizationSetGenerator include list item info
 type KustomizationSetGenerator struct {
-	List        *ListGenerator        `json:"list,omitempty"`
-	PullRequest *PullRequestGenerator `json:"pullRequest,omitempty"`
+	List          *ListGenerator          `json:"list,omitempty"`
+	GitRepository *GitRepositoryGenerator `json:"gitRepository,omitempty"`
 }
 
 // KustomizationSetSpec defines the desired state of KustomizationSet
