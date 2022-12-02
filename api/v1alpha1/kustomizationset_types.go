@@ -100,9 +100,10 @@ type PullRequestGenerator struct {
 	Labels []string `json:"labels,omitempty"`
 }
 
-// KustomizationSetGenerator include list item info
+// KustomizationSetGenerator describes the configured generators.
 type KustomizationSetGenerator struct {
 	List          *ListGenerator          `json:"list,omitempty"`
+	PullRequest   *PullRequestGenerator   `json:"pullRequest,omitempty"`
 	GitRepository *GitRepositoryGenerator `json:"gitRepository,omitempty"`
 }
 

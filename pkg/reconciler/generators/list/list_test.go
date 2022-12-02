@@ -1,4 +1,4 @@
-package generators
+package list
 
 import (
 	"context"
@@ -6,44 +6,52 @@ import (
 	"testing"
 
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 	"github.com/gitops-tools/kustomize-set-controller/test"
 	"github.com/google/go-cmp/cmp"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-var _ Generator = (*ListGenerator)(nil)
+var _ generators.Generator = (*ListGenerator)(nil)
 
 func TestGenerateListParams(t *testing.T) {
 	testCases := []struct {
+		name     string
 		elements []apiextensionsv1.JSON
-		want     []map[string]string
+		want     []map[string]any
 	}{
 		{
+			name:     "simple key/value pairs",
 			elements: []apiextensionsv1.JSON{{Raw: []byte(`{"cluster": "cluster","url": "url"}`)}},
-			want:     []map[string]string{{"cluster": "cluster", "url": "url"}},
-		}, {
+			want:     []map[string]any{{"cluster": "cluster", "url": "url"}},
+		},
+		{
+			name:     "nested key/values",
 			elements: []apiextensionsv1.JSON{{Raw: []byte(`{"cluster": "cluster","url": "url","values":{"foo":"bar"}}`)}},
-			want:     []map[string]string{{"cluster": "cluster", "url": "url", "values.foo": "bar"}},
+			want:     []map[string]any{{"cluster": "cluster", "url": "url", "values": map[string]any{"foo": "bar"}}},
 		},
 	}
 
 	for _, tt := range testCases {
-		gen := NewListGenerator()
-		got, err := gen.Generate(context.TODO(), &sourcev1.KustomizationSetGenerator{
-			List: &sourcev1.ListGenerator{
-				Elements: tt.elements,
-			},
-		}, nil)
+		t.Run(tt.name, func(t *testing.T) {
 
-		test.AssertNoError(t, err)
-		if diff := cmp.Diff(tt.want, got); diff != "" {
-			t.Fatalf("failed to generate pull requests:\n%s", diff)
-		}
+			gen := NewGenerator()
+			got, err := gen.Generate(context.TODO(), &sourcev1.KustomizationSetGenerator{
+				List: &sourcev1.ListGenerator{
+					Elements: tt.elements,
+				},
+			}, nil)
+
+			test.AssertNoError(t, err)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatalf("failed to generate list elements:\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestListGenerator_Interval(t *testing.T) {
-	gen := NewListGenerator()
+	gen := NewGenerator()
 	sg := &sourcev1.KustomizationSetGenerator{
 		List: &sourcev1.ListGenerator{
 			Elements: []apiextensionsv1.JSON{{Raw: []byte(`{"cluster": "cluster","url": "url"}`)}},
@@ -52,8 +60,8 @@ func TestListGenerator_Interval(t *testing.T) {
 
 	d := gen.Interval(sg)
 
-	if d != NoRequeueInterval {
-		t.Fatalf("got %#v want %#v", d, NoRequeueInterval)
+	if d != generators.NoRequeueInterval {
+		t.Fatalf("got %#v want %#v", d, generators.NoRequeueInterval)
 	}
 }
 
@@ -65,7 +73,7 @@ func TestListGenerator_GetTemplate(t *testing.T) {
 			},
 		},
 	}
-	gen := NewListGenerator()
+	gen := NewGenerator()
 	sg := &sourcev1.KustomizationSetGenerator{
 		List: &sourcev1.ListGenerator{
 			Elements: []apiextensionsv1.JSON{{Raw: []byte(`{"cluster": "cluster","url": "url"}`)}},

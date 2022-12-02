@@ -14,7 +14,7 @@ type Generator interface {
 	// parameters for the Kustomization template.
 	// The expected / desired list of parameters is returned, it then will be render and reconciled
 	// against the current state of the Applications in the cluster.
-	Generate(context.Context, *sourcev1.KustomizationSetGenerator, *sourcev1.KustomizationSet) ([]map[string]string, error)
+	Generate(context.Context, *sourcev1.KustomizationSetGenerator, *sourcev1.KustomizationSet) ([]map[string]any, error)
 
 	// Interval is the the generator can controller the next reconciled loop
 	//

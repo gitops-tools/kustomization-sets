@@ -1,4 +1,4 @@
-package generators
+package pullrequest
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 	"github.com/go-logr/logr"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
@@ -24,8 +25,8 @@ type PullRequestGenerator struct {
 	logr.Logger
 }
 
-// NewPullRequestGenerator creates and returns a new pull request generator.
-func NewPullRequestGenerator(l logr.Logger, c client.Client) *PullRequestGenerator {
+// NewGenerator creates and returns a new pull request generator.
+func NewGenerator(l logr.Logger, c client.Client) *PullRequestGenerator {
 	return &PullRequestGenerator{
 		Client:        c,
 		Logger:        l,
@@ -33,11 +34,11 @@ func NewPullRequestGenerator(l logr.Logger, c client.Client) *PullRequestGenerat
 	}
 }
 
-func (g *PullRequestGenerator) Generate(ctx context.Context, sg *sourcev1.KustomizationSetGenerator, ks *sourcev1.KustomizationSet) ([]map[string]string, error) {
+func (g *PullRequestGenerator) Generate(ctx context.Context, sg *sourcev1.KustomizationSetGenerator, ks *sourcev1.KustomizationSet) ([]map[string]any, error) {
 	g.Logger.Info("generating params", "repo", sg.PullRequest.Repo)
 	if sg == nil {
 		g.Logger.Info("no generator provided")
-		return nil, EmptyKustomizationSetGeneratorError
+		return nil, generators.EmptyKustomizationSetGeneratorError
 	}
 
 	if sg.PullRequest == nil {
@@ -72,17 +73,18 @@ func (g *PullRequestGenerator) Generate(ctx context.Context, sg *sourcev1.Kustom
 		return nil, fmt.Errorf("failed to list pull requests: %w", err)
 	}
 	g.Logger.Info("queried pull requests", "repo", sg.PullRequest.Repo, "count", len(prs))
-	res := []map[string]string{}
+	res := []map[string]any{}
 	for _, pr := range prs {
 		if !prMatchesLabels(pr, sg.PullRequest.Labels) {
 			continue
 		}
-		res = append(res, map[string]string{
+		res = append(res, map[string]any{
 			"number":   strconv.Itoa(pr.Number),
 			"branch":   pr.Head.Ref,
 			"head_sha": pr.Head.Sha,
 		})
 	}
+
 	return res, nil
 }
 

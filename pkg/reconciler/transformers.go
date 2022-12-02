@@ -10,7 +10,7 @@ import (
 )
 
 type transformResult struct {
-	Params   []map[string]string
+	Params   []map[string]any
 	Template sourcev1.KustomizationSetTemplate
 }
 
