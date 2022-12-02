@@ -1,4 +1,4 @@
-package generators
+package pullrequest
 
 import (
 	"reflect"
@@ -6,12 +6,13 @@ import (
 	"time"
 
 	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ Generator = (*PullRequestGenerator)(nil)
+var _ generators.Generator = (*PullRequestGenerator)(nil)
 
 // TODO: This is broken due to a change to go-scm's fake.
 // func TestPullRequestGenerator_Generate(t *testing.T) {
@@ -101,7 +102,7 @@ var _ Generator = (*PullRequestGenerator)(nil)
 
 // 	for _, tt := range testCases {
 // 		t.Run(tt.name, func(t *testing.T) {
-// 			gen := NewPullRequestGenerator(logr.Discard(), fake.NewFakeClient(tt.initObjs...))
+// 			gen := NewGenerator(logr.Discard(), fake.NewFakeClient(tt.initObjs...))
 // 			client, data := fakescm.NewDefault()
 // 			tt.dataFunc(data)
 // 			gen.clientFactory = tt.clientFactory(client)
@@ -125,7 +126,7 @@ var _ Generator = (*PullRequestGenerator)(nil)
 
 func TestPullRequestGenerator_GetInterval(t *testing.T) {
 	interval := time.Minute * 10
-	gen := NewPullRequestGenerator(logr.Discard(), fake.NewFakeClient())
+	gen := NewGenerator(logr.Discard(), fake.NewFakeClient())
 	sg := &sourcev1.KustomizationSetGenerator{
 		PullRequest: &sourcev1.PullRequestGenerator{
 			Driver:    "fake",
@@ -150,7 +151,7 @@ func TestPullRequestGenerator_GetTemplate(t *testing.T) {
 			},
 		},
 	}
-	gen := NewPullRequestGenerator(logr.Discard(), fake.NewFakeClient())
+	gen := NewGenerator(logr.Discard(), fake.NewFakeClient())
 	sg := &sourcev1.KustomizationSetGenerator{
 		PullRequest: &sourcev1.PullRequestGenerator{
 			Driver:    "fake",

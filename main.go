@@ -35,6 +35,7 @@ import (
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/controllers"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators/list"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -86,7 +87,7 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Generators: map[string]generators.Generator{
-			"List": generators.NewListGenerator(),
+			"List": list.NewGenerator(),
 		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KustomizationSet")

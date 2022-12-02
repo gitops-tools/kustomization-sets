@@ -103,6 +103,11 @@ func (in *KustomizationSetGenerator) DeepCopyInto(out *KustomizationSetGenerator
 		*out = new(ListGenerator)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.PullRequest != nil {
+		in, out := &in.PullRequest, &out.PullRequest
+		*out = new(PullRequestGenerator)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.GitRepository != nil {
 		in, out := &in.GitRepository, &out.GitRepository
 		*out = new(GitRepositoryGenerator)
