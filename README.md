@@ -54,7 +54,7 @@ spec:
       namespace: default
     spec:
       interval: 5m
-      path: "./examples/kustomize/environments/{{ env }}"
+      path: "./examples/kustomize/environments/{{ .env }}"
       prune: true
       sourceRef:
         kind: GitRepository
