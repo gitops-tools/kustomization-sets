@@ -2,13 +2,12 @@ package git
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/gitops-tools/kustomize-set-controller/test"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -38,7 +37,7 @@ func TestFetchArchiveResources(t *testing.T) {
 		},
 	}
 
-	srv := startFakeArchiveServer(t)
+	srv := test.StartFakeArchiveServer(t, "testdata")
 	for _, tt := range fetchTests {
 		t.Run(tt.description, func(t *testing.T) {
 			parser := NewRepositoryParser()
@@ -56,19 +55,12 @@ func TestFetchArchiveResources(t *testing.T) {
 
 func TestFetchArchiveResources_bad_yaml(t *testing.T) {
 	parser := NewRepositoryParser()
-	srv := startFakeArchiveServer(t)
+	srv := test.StartFakeArchiveServer(t, "testdata")
 
 	_, err := parser.ParseFromArtifacts(context.TODO(), srv.URL+"/bad_files.tar.gz", strings.TrimSpace(mustReadFile(t, "testdata/bad_files.tar.gz.sum")), "files")
 	if err.Error() != `failed to parse archive file files/dev.yaml: yaml: line 3: could not find expected ':'` {
 		t.Fatalf("got error %v", err)
 	}
-}
-
-func startFakeArchiveServer(t *testing.T) *httptest.Server {
-	ts := httptest.NewServer(http.FileServer(http.Dir("testdata")))
-	t.Cleanup(ts.Close)
-
-	return ts
 }
 
 func mustReadFile(t *testing.T, filename string) string {
