@@ -41,20 +41,20 @@ func TestRenderTemplate(t *testing.T) {
 	templateTests := []struct {
 		name   string
 		tmpl   *kustomizev1.Kustomization
-		params map[string]string
+		params map[string]any
 		want   *kustomizev1.Kustomization
 	}{
 		{name: "no params", tmpl: newKustomization(), want: newKustomization()},
 		{
 			name:   "simple params",
 			tmpl:   newKustomization(templatePath("{{.replaced}}")),
-			params: map[string]string{"replaced": "new string"},
+			params: map[string]any{"replaced": "new string"},
 			want:   newKustomization(templatePath("new string")),
 		},
 		{
 			name:   "sanitize",
 			tmpl:   newKustomization(templatePath("{{ sanitize .replaced }}")),
-			params: map[string]string{"replaced": "new string"},
+			params: map[string]any{"replaced": "new string"},
 			want:   newKustomization(templatePath("newstring")),
 		},
 	}
@@ -76,7 +76,7 @@ func TestRenderTemplate_errors(t *testing.T) {
 	templateTests := []struct {
 		name    string
 		tmpl    *kustomizev1.Kustomization
-		params  map[string]string
+		params  map[string]any
 		wantErr string
 	}{
 		{name: "no template", tmpl: nil, params: nil, wantErr: "template is empty"},

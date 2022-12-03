@@ -15,7 +15,7 @@ var funcMap = template.FuncMap{
 	"sanitize": sanitize.SanitizeDNSName,
 }
 
-func renderTemplateParams(tmpl *kustomizev1.Kustomization, params map[string]string) (*kustomizev1.Kustomization, error) {
+func renderTemplateParams(tmpl *kustomizev1.Kustomization, params map[string]any) (*kustomizev1.Kustomization, error) {
 	if tmpl == nil {
 		return nil, errors.New("application template is empty ")
 	}
@@ -43,7 +43,7 @@ func renderTemplateParams(tmpl *kustomizev1.Kustomization, params map[string]str
 	return &updated, nil
 }
 
-func render(b []byte, params map[string]string) ([]byte, error) {
+func render(b []byte, params map[string]any) ([]byte, error) {
 	t, err := template.New("kustomization").Funcs(funcMap).Parse(string(b))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
