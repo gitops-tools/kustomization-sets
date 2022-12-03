@@ -19,7 +19,10 @@ import (
 
 var _ generators.Generator = (*GitRepositoryGenerator)(nil)
 
+const testNamespace = "generation"
+
 func TestGitRepositoryGenerator_Params(t *testing.T) {
+	srv := test.StartFakeArchiveServer(t, "testdata")
 	testCases := []struct {
 		name      string
 		generator *kustomizev1.GitRepositoryGenerator
@@ -31,8 +34,13 @@ func TestGitRepositoryGenerator_Params(t *testing.T) {
 			&kustomizev1.GitRepositoryGenerator{
 				RepositoryRef: "test-repository",
 			},
-			[]runtime.Object{newGitRepository()},
-			[]map[string]any{},
+			[]runtime.Object{newGitRepository(srv.URL+"/files.tar.gz",
+				"f0a57ec1cdebda91cf00d89dfa298c6ac27791e7fdb0329990478061755eaca8")},
+			[]map[string]any{
+				{"environment": "dev", "instances": 2},
+				{"environment": "production", "instances": 10},
+				{"environment": "staging", "instances": 5},
+			},
 		},
 	}
 
@@ -45,7 +53,7 @@ func TestGitRepositoryGenerator_Params(t *testing.T) {
 				&kustomizev1.KustomizationSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-generator",
-						Namespace: "generation",
+						Namespace: testNamespace,
 					},
 					Spec: kustomizev1.KustomizationSetSpec{
 						Generators: []kustomizev1.KustomizationSetGenerator{
@@ -99,10 +107,17 @@ func TestGitRepositoryGenerator_GetTemplate(t *testing.T) {
 	}
 }
 
-func newGitRepository() *sourcev1.GitRepository {
+func newGitRepository(archiveURL, xsum string) *sourcev1.GitRepository {
 	return &sourcev1.GitRepository{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-repository",
+			Name:      "test-repository",
+			Namespace: testNamespace,
+		},
+		Status: sourcev1.GitRepositoryStatus{
+			Artifact: &sourcev1.Artifact{
+				URL:      archiveURL,
+				Checksum: xsum,
+			},
 		},
 	}
 }
