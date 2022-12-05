@@ -39,6 +39,7 @@ import (
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators/list"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestReconciliation(t *testing.T) {
@@ -172,8 +173,19 @@ func TestReconciliation(t *testing.T) {
 
 	t.Run("reconciling update of resources", func(t *testing.T) {
 		ctx := context.TODO()
-		devKS := newKustomization("engineering-dev-demo", "default")
+		devKS := newKustomization("engineering-dev-demo", "default", func(k *kustomizev1.Kustomization) {
+			k.ObjectMeta.Annotations = map[string]string{
+				"testing": "testing",
+			}
+		})
 		kz := newKustomizationSet(func(ks *sourcev1alpha1.KustomizationSet) {
+			ks.Spec.Template.KustomizationSetTemplateMeta = sourcev1alpha1.KustomizationSetTemplateMeta{
+				Name:      `{{.cluster}}-demo`,
+				Namespace: "default",
+				Annotations: map[string]string{
+					"testing.cluster": "{{.cluster}}",
+				},
+			}
 			ks.Spec.Generators = []sourcev1alpha1.KustomizationSetGenerator{
 				{
 					List: &sourcev1alpha1.ListGenerator{
@@ -218,6 +230,24 @@ func TestReconciliation(t *testing.T) {
 		updated := &sourcev1alpha1.KustomizationSet{}
 		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(kz), updated); err != nil {
 			t.Fatal(err)
+		}
+		wantUpdated := newKustomization("engineering-dev-demo", "default", func(k *kustomizev1.Kustomization) {
+			k.ObjectMeta.Annotations = map[string]string{
+				"testing.cluster": "engineering-dev",
+			}
+			k.Spec.Path = "./clusters/engineering-dev/"
+			k.Spec.KubeConfig = &kustomizev1.KubeConfig{SecretRef: meta.SecretKeyReference{Name: "engineering-dev"}}
+		})
+		want := []runtime.Object{
+			wantUpdated,
+		}
+		assertInventoryHasItems(t, updated, want...)
+		var kustomization kustomizev1.Kustomization
+		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(wantUpdated), &kustomization); err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff(wantUpdated, &kustomization, objectMetaIgnore()...); diff != "" {
+			t.Fatalf("failed to update Kustomization:\n%s", diff)
 		}
 	})
 }
@@ -300,8 +330,8 @@ func cleanupResource(t *testing.T, cl client.Client, obj client.Object) {
 	}
 }
 
-func newKustomization(name, namespace string) *kustomizev1.Kustomization {
-	return &kustomizev1.Kustomization{
+func newKustomization(name, namespace string, opts ...func(*kustomizev1.Kustomization)) *kustomizev1.Kustomization {
+	k := &kustomizev1.Kustomization{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -316,6 +346,12 @@ func newKustomization(name, namespace string) *kustomizev1.Kustomization {
 			},
 		},
 	}
+
+	for _, opt := range opts {
+		opt(k)
+	}
+
+	return k
 }
 
 func newKustomizationSet(opts ...func(*sourcev1alpha1.KustomizationSet)) *sourcev1alpha1.KustomizationSet {
@@ -362,4 +398,11 @@ func newKustomizationSet(opts ...func(*sourcev1alpha1.KustomizationSet)) *source
 		o(ks)
 	}
 	return ks
+}
+
+func objectMetaIgnore() []cmp.Option {
+	return []cmp.Option{
+		cmpopts.IgnoreFields(metav1.ObjectMeta{}, "UID", "ResourceVersion", "Generation", "CreationTimestamp", "ManagedFields"),
+		cmpopts.IgnoreFields(kustomizev1.KustomizationStatus{}, "ObservedGeneration"),
+	}
 }

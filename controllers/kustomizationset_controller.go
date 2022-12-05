@@ -119,6 +119,8 @@ func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kus
 			if err != nil {
 				return nil, fmt.Errorf("failed to create patch helper for Kustomization: %w", err)
 			}
+			existing.ObjectMeta.Annotations = kustomization.Annotations
+			existing.ObjectMeta.Labels = kustomization.Labels
 			existing.Spec = kustomization.Spec
 			if err := patchHelper.Patch(ctx, existing); err != nil {
 				return nil, fmt.Errorf("failed to update Kustomization: %w", err)
@@ -185,21 +187,27 @@ func (r *KustomizationSetReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			&source.Kind{Type: &sourcev1.GitRepository{}},
 			handler.EnqueueRequestsFromMapFunc(r.gitRepositoryToKustomizationSet),
 		).
-		// TODO: Watch GitRepositories and index the referenced GitRepository
-		// (if any).
 		Complete(r)
 }
 
 func (r *KustomizationSetReconciler) gitRepositoryToKustomizationSet(obj client.Object) []reconcile.Request {
+	// TODO: Store the applied version of GitRepositories in the Status, and don't
+	// retrigger if the commit-id isn't different.
 	ctx := context.Background()
 	var list kustomizesetv1.KustomizationSetList
+
 	if err := r.List(ctx, &list, client.MatchingFields{
 		gitRepositoryIndexKey: client.ObjectKeyFromObject(obj).String(),
 	}); err != nil {
 		return nil
 	}
 
-	return []reconcile.Request{}
+	result := []reconcile.Request{}
+	for _, v := range list.Items {
+		result = append(result, reconcile.Request{NamespacedName: types.NamespacedName{Name: v.GetName(), Namespace: v.GetNamespace()}})
+	}
+
+	return result
 }
 
 func indexGitRepositories(o client.Object) []string {
