@@ -6,7 +6,7 @@ import (
 	"time"
 
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
-	kustomizev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	kustomizesetv1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/git"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 	"github.com/go-logr/logr"
@@ -27,7 +27,7 @@ func NewGenerator(l logr.Logger, c client.Client) *GitRepositoryGenerator {
 	}
 }
 
-func (g *GitRepositoryGenerator) Generate(ctx context.Context, sg *kustomizev1.KustomizationSetGenerator, ks *kustomizev1.KustomizationSet) ([]map[string]any, error) {
+func (g *GitRepositoryGenerator) Generate(ctx context.Context, sg *kustomizesetv1.KustomizationSetGenerator, ks *kustomizesetv1.KustomizationSet) ([]map[string]any, error) {
 	if sg == nil {
 		return nil, generators.EmptyKustomizationSetGeneratorError
 	}
@@ -42,15 +42,15 @@ func (g *GitRepositoryGenerator) Generate(ctx context.Context, sg *kustomizev1.K
 	}
 	parser := git.NewRepositoryParser()
 
-	return parser.ParseFromArtifacts(ctx, gr.Status.Artifact.URL, gr.Status.Artifact.Checksum, "files")
+	return parser.ParseFromArtifacts(ctx, gr.Status.Artifact.URL, gr.Status.Artifact.Checksum, sg.GitRepository.Directories)
 }
 
 // Interval is an implementation of the Generator interface.
-func (g *GitRepositoryGenerator) Interval(sg *kustomizev1.KustomizationSetGenerator) time.Duration {
+func (g *GitRepositoryGenerator) Interval(sg *kustomizesetv1.KustomizationSetGenerator) time.Duration {
 	return generators.NoRequeueInterval
 }
 
 // Template is an implementation of the Generator interface.
-func (g *GitRepositoryGenerator) Template(sg *kustomizev1.KustomizationSetGenerator) *kustomizev1.KustomizationSetTemplate {
+func (g *GitRepositoryGenerator) Template(sg *kustomizesetv1.KustomizationSetGenerator) *kustomizesetv1.KustomizationSetTemplate {
 	return sg.GitRepository.Template
 }

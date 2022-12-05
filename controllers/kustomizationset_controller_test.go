@@ -37,6 +37,7 @@ import (
 	"github.com/fluxcd/pkg/apis/meta"
 	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators/list"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -73,7 +74,7 @@ func TestReconciliation(t *testing.T) {
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
 		Generators: map[string]generators.Generator{
-			"List": generators.NewListGenerator(),
+			"List": list.NewGenerator(),
 		},
 	}
 

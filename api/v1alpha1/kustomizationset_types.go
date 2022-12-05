@@ -47,9 +47,9 @@ type ListGenerator struct {
 	Template *KustomizationSetTemplate `json:"template,omitempty"`
 }
 
-// GitDirectoryGeneratorItem defines a path to be parsed (or excluded from) for
+// GitRepositoryGeneratorDirectoryItem defines a path to be parsed (or excluded from) for
 // files.
-type GitDirectoryGeneratorItem struct {
+type GitRepositoryGeneratorDirectoryItem struct {
 	Path    string `json:"path"`
 	Exclude bool   `json:"exclude,omitempty"`
 }
@@ -60,7 +60,7 @@ type GitRepositoryGenerator struct {
 	RepositoryRef string `json:"repositoryRef"`
 
 	// Directories is a set of rules for identifying directories to be parsed.
-	Directories []GitDirectoryGeneratorItem `json:"directories,omitempty"`
+	Directories []GitRepositoryGeneratorDirectoryItem `json:"directories,omitempty"`
 
 	// Template is an optional template that can be merged with generated
 	// Kustomizations.
@@ -125,6 +125,9 @@ type KustomizationSetStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description=""
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description=""
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].message",description=""
 
 // KustomizationSet is the Schema for the kustomizationsets API
 type KustomizationSet struct {
