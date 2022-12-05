@@ -3,13 +3,14 @@ package git
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/fluxcd/pkg/http/fetch"
 	"github.com/fluxcd/pkg/tar"
-	"gopkg.in/yaml.v3"
+	kustomizationsetv1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	"github.com/go-logr/logr"
+	"sigs.k8s.io/yaml"
 )
 
 type archiveFetcher interface {
@@ -23,6 +24,7 @@ const retries = 9
 // resources from them.
 type RepositoryParser struct {
 	fetcher archiveFetcher
+	logr.Logger
 }
 
 // NewRepositoryParser creates and returns a RepositoryParser.
@@ -30,39 +32,48 @@ func NewRepositoryParser() *RepositoryParser {
 	return &RepositoryParser{fetcher: fetch.NewArchiveFetcher(retries, tar.UnlimitedUntarSize, tar.UnlimitedUntarSize, "")}
 }
 
-func (p *RepositoryParser) ParseFromArtifacts(ctx context.Context, archiveURL, checksum, parseDir string) ([]map[string]any, error) {
+// ParseFromArtifacts extracts the archive and processes the files.
+func (p *RepositoryParser) ParseFromArtifacts(ctx context.Context, archiveURL, checksum string, dirs []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem) ([]map[string]any, error) {
 	tempDir, err := os.MkdirTemp("", "parsing")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary directory when parsing artifacts: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			p.Logger.Error(err, "failed to remove temporary archive directory")
+		}
+	}()
 
 	if err := p.fetcher.Fetch(archiveURL, checksum, tempDir); err != nil {
 		return nil, fmt.Errorf("failed to get archive URL %s: %w", archiveURL, err)
 	}
 
-	files, err := os.ReadDir(filepath.Join(tempDir, parseDir))
-	if err != nil {
-		log.Fatal(err)
-	}
+	// TODO: exclude paths!
 
 	result := []map[string]any{}
-	for _, file := range files {
-		// TODO: Limit this?
-		localName := filepath.Join(parseDir, file.Name())
-		filename := filepath.Join(tempDir, localName)
-
-		b, err := os.ReadFile(filename)
+	for _, dir := range dirs {
+		files, err := os.ReadDir(filepath.Join(tempDir, dir.Path))
 		if err != nil {
-			return nil, fmt.Errorf("failed to read from archive file %s: %w", localName, err)
+			return nil, fmt.Errorf("failed to read directory from archive %q: %w", dir.Path, err)
 		}
 
-		r := map[string]any{}
-		if err := yaml.Unmarshal(b, &r); err != nil {
-			return nil, fmt.Errorf("failed to parse archive file %s: %w", localName, err)
-		}
+		for _, file := range files {
+			// TODO: Limit this?
+			localName := filepath.Join(dir.Path, file.Name())
+			filename := filepath.Join(tempDir, localName)
 
-		result = append(result, r)
+			b, err := os.ReadFile(filename)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read from archive file %s: %w", localName, err)
+			}
+
+			r := map[string]any{}
+			if err := yaml.Unmarshal(b, &r); err != nil {
+				return nil, fmt.Errorf("failed to parse archive file %s: %w", localName, err)
+			}
+
+			result = append(result, r)
+		}
 	}
 
 	return result, nil

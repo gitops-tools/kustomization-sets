@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	kustomizationsetv1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/test"
 	"github.com/google/go-cmp/cmp"
 )
@@ -21,18 +22,18 @@ func TestFetchArchiveResources(t *testing.T) {
 			description: "simple yaml files",
 			filename:    "/files.tar.gz",
 			want: []map[string]any{
-				{"environment": "dev", "instances": 2},
-				{"environment": "production", "instances": 10},
-				{"environment": "staging", "instances": 5},
+				{"environment": "dev", "instances": 2.0},
+				{"environment": "production", "instances": 10.0},
+				{"environment": "staging", "instances": 5.0},
 			},
 		},
 		{
 			description: "simple json files",
 			filename:    "/json_files.tar.gz",
 			want: []map[string]any{
-				{"environment": "dev", "instances": 1},
-				{"environment": "production", "instances": 10},
-				{"environment": "staging", "instances": 5},
+				{"environment": "dev", "instances": 1.0},
+				{"environment": "production", "instances": 10.0},
+				{"environment": "staging", "instances": 5.0},
 			},
 		},
 	}
@@ -41,7 +42,7 @@ func TestFetchArchiveResources(t *testing.T) {
 	for _, tt := range fetchTests {
 		t.Run(tt.description, func(t *testing.T) {
 			parser := NewRepositoryParser()
-			parsed, err := parser.ParseFromArtifacts(context.TODO(), srv.URL+tt.filename, strings.TrimSpace(mustReadFile(t, "testdata"+tt.filename+".sum")), "files")
+			parsed, err := parser.ParseFromArtifacts(context.TODO(), srv.URL+tt.filename, strings.TrimSpace(mustReadFile(t, "testdata"+tt.filename+".sum")), []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem{{Path: "files"}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -57,8 +58,8 @@ func TestFetchArchiveResources_bad_yaml(t *testing.T) {
 	parser := NewRepositoryParser()
 	srv := test.StartFakeArchiveServer(t, "testdata")
 
-	_, err := parser.ParseFromArtifacts(context.TODO(), srv.URL+"/bad_files.tar.gz", strings.TrimSpace(mustReadFile(t, "testdata/bad_files.tar.gz.sum")), "files")
-	if err.Error() != `failed to parse archive file files/dev.yaml: yaml: line 3: could not find expected ':'` {
+	_, err := parser.ParseFromArtifacts(context.TODO(), srv.URL+"/bad_files.tar.gz", strings.TrimSpace(mustReadFile(t, "testdata/bad_files.tar.gz.sum")), []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem{{Path: "files"}})
+	if err.Error() != `failed to parse archive file files/dev.yaml: error converting YAML to JSON: yaml: line 4: could not find expected ':'` {
 		t.Fatalf("got error %v", err)
 	}
 }

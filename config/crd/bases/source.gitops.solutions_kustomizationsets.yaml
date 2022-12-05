@@ -15,7 +15,17 @@ spec:
     singular: kustomizationset
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: KustomizationSet is the Schema for the kustomizationsets API
@@ -48,8 +58,8 @@ spec:
                           description: Directories is a set of rules for identifying
                             directories to be parsed.
                           items:
-                            description: GitDirectoryGeneratorItem defines a path
-                              to be parsed (or excluded from) for files.
+                            description: GitRepositoryGeneratorDirectoryItem defines
+                              a path to be parsed (or excluded from) for files.
                             properties:
                               exclude:
                                 type: boolean
@@ -1099,6 +1109,7 @@ spec:
                                 TODO: Add other useful fields. apiVersion, kind, uid?'
                               type: string
                           type: object
+                          x-kubernetes-map-type: atomic
                         serverURL:
                           description: This is the API endpoint to use.
                           pattern: ^https://

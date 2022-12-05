@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
-	kustomizev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	kustomizesetv1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
 	"github.com/gitops-tools/kustomize-set-controller/test"
 	"github.com/go-logr/logr"
@@ -25,21 +25,24 @@ func TestGitRepositoryGenerator_Params(t *testing.T) {
 	srv := test.StartFakeArchiveServer(t, "testdata")
 	testCases := []struct {
 		name      string
-		generator *kustomizev1.GitRepositoryGenerator
+		generator *kustomizesetv1.GitRepositoryGenerator
 		objects   []runtime.Object
 		want      []map[string]any
 	}{
 		{
 			"simple case",
-			&kustomizev1.GitRepositoryGenerator{
+			&kustomizesetv1.GitRepositoryGenerator{
 				RepositoryRef: "test-repository",
+				Directories: []kustomizesetv1.GitRepositoryGeneratorDirectoryItem{
+					{Path: "files"},
+				},
 			},
 			[]runtime.Object{newGitRepository(srv.URL+"/files.tar.gz",
 				"f0a57ec1cdebda91cf00d89dfa298c6ac27791e7fdb0329990478061755eaca8")},
 			[]map[string]any{
-				{"environment": "dev", "instances": 2},
-				{"environment": "production", "instances": 10},
-				{"environment": "staging", "instances": 5},
+				{"environment": "dev", "instances": 2.0},
+				{"environment": "production", "instances": 10.0},
+				{"environment": "staging", "instances": 5.0},
 			},
 		},
 	}
@@ -47,16 +50,16 @@ func TestGitRepositoryGenerator_Params(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			gen := NewGenerator(logr.Discard(), newFakeClient(t, tt.objects...))
-			got, err := gen.Generate(context.TODO(), &kustomizev1.KustomizationSetGenerator{
+			got, err := gen.Generate(context.TODO(), &kustomizesetv1.KustomizationSetGenerator{
 				GitRepository: tt.generator,
 			},
-				&kustomizev1.KustomizationSet{
+				&kustomizesetv1.KustomizationSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-generator",
 						Namespace: testNamespace,
 					},
-					Spec: kustomizev1.KustomizationSetSpec{
-						Generators: []kustomizev1.KustomizationSetGenerator{
+					Spec: kustomizesetv1.KustomizationSetSpec{
+						Generators: []kustomizesetv1.KustomizationSetGenerator{
 							{
 								GitRepository: tt.generator,
 							},
@@ -74,8 +77,8 @@ func TestGitRepositoryGenerator_Params(t *testing.T) {
 
 func TestGitRepositoryGenerator_Interval(t *testing.T) {
 	gen := NewGenerator(logr.Discard(), nil)
-	sg := &kustomizev1.KustomizationSetGenerator{
-		GitRepository: &kustomizev1.GitRepositoryGenerator{},
+	sg := &kustomizesetv1.KustomizationSetGenerator{
+		GitRepository: &kustomizesetv1.GitRepositoryGenerator{},
 	}
 
 	d := gen.Interval(sg)
@@ -86,16 +89,16 @@ func TestGitRepositoryGenerator_Interval(t *testing.T) {
 }
 
 func TestGitRepositoryGenerator_GetTemplate(t *testing.T) {
-	template := &kustomizev1.KustomizationSetTemplate{
-		KustomizationSetTemplateMeta: kustomizev1.KustomizationSetTemplateMeta{
+	template := &kustomizesetv1.KustomizationSetTemplate{
+		KustomizationSetTemplateMeta: kustomizesetv1.KustomizationSetTemplateMeta{
 			Labels: map[string]string{
 				"cluster.app/name": "{{ cluster }}",
 			},
 		},
 	}
 	gen := NewGenerator(logr.Discard(), nil)
-	sg := &kustomizev1.KustomizationSetGenerator{
-		GitRepository: &kustomizev1.GitRepositoryGenerator{
+	sg := &kustomizesetv1.KustomizationSetGenerator{
+		GitRepository: &kustomizesetv1.GitRepositoryGenerator{
 			Template: template,
 		},
 	}
@@ -128,7 +131,7 @@ func newFakeClient(t *testing.T, objs ...runtime.Object) client.WithWatch {
 	if err := sourcev1.AddToScheme(scheme); err != nil {
 		t.Fatal(err)
 	}
-	if err := kustomizev1.AddToScheme(scheme); err != nil {
+	if err := kustomizesetv1.AddToScheme(scheme); err != nil {
 		t.Fatal(err)
 	}
 

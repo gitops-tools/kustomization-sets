@@ -32,9 +32,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
+	kustomizev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomize-set-controller/controllers"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators/gitrepository"
 	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators/list"
 	//+kubebuilder:scaffold:imports
 )
@@ -48,7 +50,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(kustomizev1.AddToScheme(scheme))
-	utilruntime.Must(sourcev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(sourcev1.AddToScheme(scheme))
+	utilruntime.Must(kustomizev1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -61,6 +64,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	// TODO: provide configuration options!
 	opts := zap.Options{
 		Development: true,
 	}
@@ -87,7 +91,8 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Generators: map[string]generators.Generator{
-			"List": list.NewGenerator(),
+			"List":          list.NewGenerator(),
+			"GitRepository": gitrepository.NewGenerator(zapLog, mgr.GetClient()),
 		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KustomizationSet")
