@@ -5,7 +5,7 @@ import (
 	"time"
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
-	"github.com/gitops-tools/kustomize-set-controller/test"
+	"github.com/gitops-tools/kustomization-set-controller/test"
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

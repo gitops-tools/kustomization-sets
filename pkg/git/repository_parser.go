@@ -8,7 +8,7 @@ import (
 
 	"github.com/fluxcd/pkg/http/fetch"
 	"github.com/fluxcd/pkg/tar"
-	kustomizationsetv1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	kustomizationsetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/yaml"
 )

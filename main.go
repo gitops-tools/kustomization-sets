@@ -33,11 +33,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
-	kustomizev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomize-set-controller/controllers"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators/gitrepository"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators/list"
+	kustomizev1alpha1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/controllers"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators/gitrepository"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators/list"
 	//+kubebuilder:scaffold:imports
 )
 

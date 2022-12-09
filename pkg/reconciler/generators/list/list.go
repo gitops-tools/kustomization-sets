@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
 )
 
 // ListGenerator is a generic JSON object list.

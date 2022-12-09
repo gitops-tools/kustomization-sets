@@ -35,9 +35,9 @@ import (
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/fluxcd/pkg/apis/meta"
-	sourcev1alpha1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators/list"
+	sourcev1alpha1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators/list"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )

@@ -35,9 +35,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	kustomizesetv1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	kustomizesetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
 	"github.com/gitops-tools/pkg/sets"
 )
 

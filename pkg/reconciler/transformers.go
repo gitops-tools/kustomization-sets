@@ -4,8 +4,8 @@ import (
 	"context"
 	"reflect"
 
-	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
 	"github.com/imdario/mergo"
 )
 

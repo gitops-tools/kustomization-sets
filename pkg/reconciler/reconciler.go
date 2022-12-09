@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
-	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomize-set-controller/pkg/reconciler/generators"
+	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

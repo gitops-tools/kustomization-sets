@@ -1,4 +1,4 @@
-module github.com/gitops-tools/kustomize-set-controller
+module github.com/gitops-tools/kustomization-set-controller
 
 go 1.19
 

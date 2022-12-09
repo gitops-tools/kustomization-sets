@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	sourcev1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
+	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
 )
 
 // Generator defines the interface implemented by all KustomizationSet generators.

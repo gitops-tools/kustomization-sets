@@ -1,4 +1,4 @@
-# kustomize-set-controller
+# kustomization-set-controller
 
 ## Building
 

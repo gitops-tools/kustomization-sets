@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	kustomizationsetv1 "github.com/gitops-tools/kustomize-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomize-set-controller/test"
+	kustomizationsetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/test"
 	"github.com/google/go-cmp/cmp"
 )
 
