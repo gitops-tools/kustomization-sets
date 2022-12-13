@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
-	kustomizesetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	kustomizationsetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
 	"github.com/gitops-tools/kustomization-set-controller/test"
 	"github.com/go-logr/logr"
@@ -25,15 +25,15 @@ func TestGitRepositoryGenerator_Params(t *testing.T) {
 	srv := test.StartFakeArchiveServer(t, "testdata")
 	testCases := []struct {
 		name      string
-		generator *kustomizesetv1.GitRepositoryGenerator
+		generator *kustomizationsetv1.GitRepositoryGenerator
 		objects   []runtime.Object
 		want      []map[string]any
 	}{
 		{
 			"simple case",
-			&kustomizesetv1.GitRepositoryGenerator{
+			&kustomizationsetv1.GitRepositoryGenerator{
 				RepositoryRef: "test-repository",
-				Directories: []kustomizesetv1.GitRepositoryGeneratorDirectoryItem{
+				Directories: []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem{
 					{Path: "files"},
 				},
 			},
@@ -50,16 +50,16 @@ func TestGitRepositoryGenerator_Params(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			gen := NewGenerator(logr.Discard(), newFakeClient(t, tt.objects...))
-			got, err := gen.Generate(context.TODO(), &kustomizesetv1.KustomizationSetGenerator{
+			got, err := gen.Generate(context.TODO(), &kustomizationsetv1.KustomizationSetGenerator{
 				GitRepository: tt.generator,
 			},
-				&kustomizesetv1.KustomizationSet{
+				&kustomizationsetv1.KustomizationSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-generator",
 						Namespace: testNamespace,
 					},
-					Spec: kustomizesetv1.KustomizationSetSpec{
-						Generators: []kustomizesetv1.KustomizationSetGenerator{
+					Spec: kustomizationsetv1.KustomizationSetSpec{
+						Generators: []kustomizationsetv1.KustomizationSetGenerator{
 							{
 								GitRepository: tt.generator,
 							},
@@ -77,8 +77,8 @@ func TestGitRepositoryGenerator_Params(t *testing.T) {
 
 func TestGitRepositoryGenerator_Interval(t *testing.T) {
 	gen := NewGenerator(logr.Discard(), nil)
-	sg := &kustomizesetv1.KustomizationSetGenerator{
-		GitRepository: &kustomizesetv1.GitRepositoryGenerator{},
+	sg := &kustomizationsetv1.KustomizationSetGenerator{
+		GitRepository: &kustomizationsetv1.GitRepositoryGenerator{},
 	}
 
 	d := gen.Interval(sg)
@@ -89,16 +89,16 @@ func TestGitRepositoryGenerator_Interval(t *testing.T) {
 }
 
 func TestGitRepositoryGenerator_GetTemplate(t *testing.T) {
-	template := &kustomizesetv1.KustomizationSetTemplate{
-		KustomizationSetTemplateMeta: kustomizesetv1.KustomizationSetTemplateMeta{
+	template := &kustomizationsetv1.KustomizationSetTemplate{
+		KustomizationSetTemplateMeta: kustomizationsetv1.KustomizationSetTemplateMeta{
 			Labels: map[string]string{
 				"cluster.app/name": "{{ cluster }}",
 			},
 		},
 	}
 	gen := NewGenerator(logr.Discard(), nil)
-	sg := &kustomizesetv1.KustomizationSetGenerator{
-		GitRepository: &kustomizesetv1.GitRepositoryGenerator{
+	sg := &kustomizationsetv1.KustomizationSetGenerator{
+		GitRepository: &kustomizationsetv1.GitRepositoryGenerator{
 			Template: template,
 		},
 	}
@@ -131,7 +131,7 @@ func newFakeClient(t *testing.T, objs ...runtime.Object) client.WithWatch {
 	if err := sourcev1.AddToScheme(scheme); err != nil {
 		t.Fatal(err)
 	}
-	if err := kustomizesetv1.AddToScheme(scheme); err != nil {
+	if err := kustomizationsetv1.AddToScheme(scheme); err != nil {
 		t.Fatal(err)
 	}
 

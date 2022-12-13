@@ -6,10 +6,11 @@ import (
 	"time"
 
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
-	kustomizesetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	kustomizationsetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomization-set-controller/pkg/git"
 	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,7 +28,7 @@ func NewGenerator(l logr.Logger, c client.Client) *GitRepositoryGenerator {
 	}
 }
 
-func (g *GitRepositoryGenerator) Generate(ctx context.Context, sg *kustomizesetv1.KustomizationSetGenerator, ks *kustomizesetv1.KustomizationSet) ([]map[string]any, error) {
+func (g *GitRepositoryGenerator) Generate(ctx context.Context, sg *kustomizationsetv1.KustomizationSetGenerator, ks *kustomizationsetv1.KustomizationSet) ([]map[string]any, error) {
 	if sg == nil {
 		return nil, generators.EmptyKustomizationSetGeneratorError
 	}
@@ -46,11 +47,16 @@ func (g *GitRepositoryGenerator) Generate(ctx context.Context, sg *kustomizesetv
 }
 
 // Interval is an implementation of the Generator interface.
-func (g *GitRepositoryGenerator) Interval(sg *kustomizesetv1.KustomizationSetGenerator) time.Duration {
+func (g *GitRepositoryGenerator) Interval(sg *kustomizationsetv1.KustomizationSetGenerator) time.Duration {
 	return generators.NoRequeueInterval
 }
 
 // Template is an implementation of the Generator interface.
-func (g *GitRepositoryGenerator) Template(sg *kustomizesetv1.KustomizationSetGenerator) *kustomizesetv1.KustomizationSetTemplate {
+func (g *GitRepositoryGenerator) Template(sg *kustomizationsetv1.KustomizationSetGenerator) *kustomizationsetv1.KustomizationSetTemplate {
 	return sg.GitRepository.Template
+}
+
+// AdditionalResources is an implementation of the Generator interface.
+func (g *GitRepositoryGenerator) AdditionalResources(*kustomizationsetv1.KustomizationSetGenerator) ([]runtime.Object, error) {
+	return nil, nil
 }
