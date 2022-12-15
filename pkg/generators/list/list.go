@@ -7,16 +7,26 @@ import (
 	"time"
 
 	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
+	"github.com/go-logr/logr"
 )
 
 // ListGenerator is a generic JSON object list.
 type ListGenerator struct {
+	logger logr.Logger
+}
+
+// GeneratorFactory is a function for creating per-reconciliation generators the
+// ListGenerator.
+func GeneratorFactory() generators.GeneratorFactory {
+	return func(l logr.Logger) generators.Generator {
+		return NewGenerator(l)
+	}
 }
 
 // NewGenerator creates and returns a new list generator.
-func NewGenerator() *ListGenerator {
-	return &ListGenerator{}
+func NewGenerator(l logr.Logger) *ListGenerator {
+	return &ListGenerator{logger: l}
 }
 
 func (g *ListGenerator) Generate(_ context.Context, sg *sourcev1.KustomizationSetGenerator, _ *sourcev1.KustomizationSet) ([]map[string]any, error) {

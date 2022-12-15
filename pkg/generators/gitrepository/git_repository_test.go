@@ -7,7 +7,7 @@ import (
 
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 	kustomizesetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
 	"github.com/gitops-tools/kustomization-set-controller/test"
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"

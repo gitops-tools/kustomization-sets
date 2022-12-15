@@ -7,14 +7,15 @@ import (
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/fluxcd/pkg/apis/meta"
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators/list"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators/list"
 	"github.com/gitops-tools/kustomization-set-controller/test"
 )
 
@@ -25,7 +26,7 @@ const (
 
 func TestGenerateKustomizations(t *testing.T) {
 	testGenerators := map[string]generators.Generator{
-		"List": list.NewGenerator(),
+		"List": list.NewGenerator(logr.Discard()),
 	}
 	listGeneratorTests := []struct {
 		name     string

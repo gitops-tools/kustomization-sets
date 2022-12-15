@@ -6,7 +6,11 @@ import (
 	"time"
 
 	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/go-logr/logr"
 )
+
+// GeneratorFactory is a way to create a per-reconciliation generator.
+type GeneratorFactory func(logr.Logger) Generator
 
 // Generator defines the interface implemented by all KustomizationSet generators.
 type Generator interface {

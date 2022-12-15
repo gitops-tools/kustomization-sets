@@ -35,9 +35,9 @@ import (
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 	kustomizev1alpha1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
 	"github.com/gitops-tools/kustomization-set-controller/controllers"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators/gitrepository"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators/list"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators/gitrepository"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators/list"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -91,8 +91,8 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Generators: map[string]generators.Generator{
-			"List":          list.NewGenerator(),
-			"GitRepository": gitrepository.NewGenerator(zapLog, mgr.GetClient()),
+			"List":          list.NewGenerator,
+			"GitRepository": gitrepository.GeneratorFactory(mgr.GetClient()),
 		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KustomizationSet")

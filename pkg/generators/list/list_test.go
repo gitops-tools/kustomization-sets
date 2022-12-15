@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
 	"github.com/gitops-tools/kustomization-set-controller/test"
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
@@ -35,7 +36,7 @@ func TestGenerateListParams(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gen := NewGenerator()
+			gen := NewGenerator(logr.Discard())
 			got, err := gen.Generate(context.TODO(), &sourcev1.KustomizationSetGenerator{
 				List: &sourcev1.ListGenerator{
 					Elements: tt.elements,
@@ -51,7 +52,7 @@ func TestGenerateListParams(t *testing.T) {
 }
 
 func TestListGenerator_Interval(t *testing.T) {
-	gen := NewGenerator()
+	gen := NewGenerator(logr.Discard())
 	sg := &sourcev1.KustomizationSetGenerator{
 		List: &sourcev1.ListGenerator{
 			Elements: []apiextensionsv1.JSON{{Raw: []byte(`{"cluster": "cluster","url": "url"}`)}},
@@ -73,7 +74,7 @@ func TestListGenerator_GetTemplate(t *testing.T) {
 			},
 		},
 	}
-	gen := NewGenerator()
+	gen := NewGenerator(logr.Discard())
 	sg := &sourcev1.KustomizationSetGenerator{
 		List: &sourcev1.ListGenerator{
 			Elements: []apiextensionsv1.JSON{{Raw: []byte(`{"cluster": "cluster","url": "url"}`)}},

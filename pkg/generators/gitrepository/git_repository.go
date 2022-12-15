@@ -7,8 +7,8 @@ import (
 
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta2"
 	kustomizesetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
 	"github.com/gitops-tools/kustomization-set-controller/pkg/git"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -19,7 +19,15 @@ type GitRepositoryGenerator struct {
 	logr.Logger
 }
 
-// NewGenerator creates and returns a new pull request generator.
+// GeneratorFactory is a function for creating per-reconciliation generators the
+// GitRepositoryGenerator.
+func GeneratorFactory(c client.Client) generators.GeneratorFactory {
+	return func(l logr.Logger) generators.Generator {
+		return NewGenerator(l, c)
+	}
+}
+
+// NewGenerator creates and returns a new GitRepository generator.
 func NewGenerator(l logr.Logger, c client.Client) *GitRepositoryGenerator {
 	return &GitRepositoryGenerator{
 		Client: c,

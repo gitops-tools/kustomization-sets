@@ -36,8 +36,8 @@ import (
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/fluxcd/pkg/apis/meta"
 	sourcev1alpha1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators/list"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators/list"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -74,8 +74,8 @@ func TestReconciliation(t *testing.T) {
 	reconciler := &KustomizationSetReconciler{
 		Client: k8sClient,
 		Scheme: scheme.Scheme,
-		Generators: map[string]generators.Generator{
-			"List": list.NewGenerator(),
+		Generators: map[string]generators.GeneratorFactory{
+			"List": list.GeneratorFactory(),
 		},
 	}
 

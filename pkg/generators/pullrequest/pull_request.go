@@ -7,7 +7,7 @@ import (
 	"time"
 
 	sourcev1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
 	"github.com/go-logr/logr"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
@@ -17,6 +17,14 @@ import (
 )
 
 type clientFactoryFunc func(driver, serverURL, oauthToken string, opts ...factory.ClientOptionFunc) (*scm.Client, error)
+
+// GeneratorFactory is a function for creating per-reconciliation generators the
+// GitRepositoryGenerator.
+func GeneratorFactory(c client.Client) generators.GeneratorFactory {
+	return func(l logr.Logger) generators.Generator {
+		return NewGenerator(l, c)
+	}
+}
 
 // PullRequestGenerator generates from the open pull requests in a repository.
 type PullRequestGenerator struct {

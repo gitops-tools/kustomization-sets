@@ -36,8 +36,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	kustomizesetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
+	"github.com/gitops-tools/kustomization-set-controller/pkg/generators"
 	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler"
-	"github.com/gitops-tools/kustomization-set-controller/pkg/reconciler/generators"
 	"github.com/gitops-tools/pkg/sets"
 )
 
@@ -49,7 +49,7 @@ const (
 type KustomizationSetReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
-	Generators map[string]generators.Generator
+	Generators map[string]generators.GeneratorFactory
 }
 
 //+kubebuilder:rbac:groups=source.gitops.solutions,resources=kustomizationsets,verbs=get;list;watch;create;update;patch;delete
@@ -88,7 +88,12 @@ func (r *KustomizationSetReconciler) Reconcile(ctx context.Context, req ctrl.Req
 }
 
 func (r *KustomizationSetReconciler) reconcileResources(ctx context.Context, kustomizationSet *kustomizesetv1.KustomizationSet) (*kustomizesetv1.ResourceInventory, error) {
-	kustomizations, err := reconciler.GenerateKustomizations(ctx, kustomizationSet, r.Generators)
+	generators := map[string]generators.Generator{}
+	for k, factory := range r.Generators {
+		generators[k] = factory(log.FromContext(ctx))
+	}
+
+	kustomizations, err := reconciler.GenerateKustomizations(ctx, kustomizationSet, generators)
 	if err != nil {
 		return nil, err
 	}
