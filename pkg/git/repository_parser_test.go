@@ -12,15 +12,17 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestFetchArchiveResources(t *testing.T) {
+func TestParseFromArtifacts(t *testing.T) {
 	fetchTests := []struct {
 		description string
 		filename    string
+		items       []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem
 		want        []map[string]any
 	}{
 		{
 			description: "simple yaml files",
 			filename:    "/files.tar.gz",
+			items:       []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem{{Path: "files"}},
 			want: []map[string]any{
 				{"environment": "dev", "instances": 2.0},
 				{"environment": "production", "instances": 10.0},
@@ -30,10 +32,31 @@ func TestFetchArchiveResources(t *testing.T) {
 		{
 			description: "simple json files",
 			filename:    "/json_files.tar.gz",
+			items:       []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem{{Path: "files"}},
 			want: []map[string]any{
 				{"environment": "dev", "instances": 1.0},
 				{"environment": "production", "instances": 10.0},
 				{"environment": "staging", "instances": 5.0},
+			},
+		},
+		{
+			description: "multiple paths",
+			filename:    "/subdirs.tar.gz",
+			items:       []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem{{Path: "files/dev"}, {Path: "files/staging"}, {Path: "files/production"}},
+			want: []map[string]any{
+				{"environment": "dev", "instances": 2.0},
+				{"environment": "production", "instances": 10.0},
+				{"environment": "staging", "instances": 5.0},
+			},
+		},
+		{
+			description: "search tree",
+			filename:    "/subdirs.tar.gz",
+			items:       []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem{{Path: "files"}},
+			want: []map[string]any{
+				{"environment": "dev", "instances": 2.0},
+				{"environment": "staging", "instances": 5.0},
+				{"environment": "production", "instances": 10.0},
 			},
 		},
 	}
@@ -42,7 +65,7 @@ func TestFetchArchiveResources(t *testing.T) {
 	for _, tt := range fetchTests {
 		t.Run(tt.description, func(t *testing.T) {
 			parser := NewRepositoryParser()
-			parsed, err := parser.ParseFromArtifacts(context.TODO(), srv.URL+tt.filename, strings.TrimSpace(mustReadFile(t, "testdata"+tt.filename+".sum")), []kustomizationsetv1.GitRepositoryGeneratorDirectoryItem{{Path: "files"}})
+			parsed, err := parser.ParseFromArtifacts(context.TODO(), srv.URL+tt.filename, strings.TrimSpace(mustReadFile(t, "testdata"+tt.filename+".sum")), tt.items)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -54,7 +77,7 @@ func TestFetchArchiveResources(t *testing.T) {
 	}
 }
 
-func TestFetchArchiveResources_bad_yaml(t *testing.T) {
+func TestParseFromArtifacts_bad_yaml(t *testing.T) {
 	parser := NewRepositoryParser()
 	srv := test.StartFakeArchiveServer(t, "testdata")
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	securejoin "github.com/cyphar/filepath-securejoin"
 	"github.com/fluxcd/pkg/http/fetch"
 	"github.com/fluxcd/pkg/tar"
 	kustomizationsetv1 "github.com/gitops-tools/kustomization-set-controller/api/v1alpha1"
@@ -52,7 +53,11 @@ func (p *RepositoryParser) ParseFromArtifacts(ctx context.Context, archiveURL, c
 
 	result := []map[string]any{}
 	for _, dir := range dirs {
-		files, err := os.ReadDir(filepath.Join(tempDir, dir.Path))
+		readPath, err := securejoin.SecureJoin(tempDir, dir.Path)
+		if err != nil {
+			return nil, err
+		}
+		files, err := os.ReadDir(readPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read directory from archive %q: %w", dir.Path, err)
 		}
