@@ -1,5 +1,7 @@
 # kustomization-set-controller
 
+This is no longer maintained, go look at [kluctl](https://kluctl.io/).
+
 ## Building
 
 ```shell
